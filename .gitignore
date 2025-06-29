@@ -1,0 +1,20 @@
+# Java and Eclipse
+*.class
+/bin/
+/target/
+/out/
+.classpath
+.project
+.settings/
+
+# JavaFX Build Tool
+build.fxbuild
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+*.iml
+.vscode/

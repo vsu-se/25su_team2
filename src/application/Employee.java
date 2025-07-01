@@ -34,6 +34,10 @@ public abstract class Employee {
 		return username;
 	}
 	
+	public String getPassword() {
+		return password;
+	}
+	
 	public String getDepartment() {
 		return department;
 	}

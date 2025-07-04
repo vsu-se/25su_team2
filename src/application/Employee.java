@@ -34,8 +34,8 @@ public abstract class Employee {
 		return username;
 	}
 	
-	public String getPassword() {
-		return password;
+	public boolean authenticate (String candidate) {
+		return candidate != null && candidate.equals(this.password);
 	}
 	
 	public String getDepartment() {

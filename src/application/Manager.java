@@ -35,7 +35,7 @@ public class Manager extends Employee {
 	        throw new AuthenticationException("User is not a manager");
 	    }
 	    // 4. Wrong password?
-	    if (!found.getPassword().equals(password)) {
+	    if (!found.authenticate(password)) {
 	        throw new AuthenticationException("Invalid username or password");
 	    }
 	    // 5. Success!

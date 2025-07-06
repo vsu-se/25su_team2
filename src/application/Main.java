@@ -146,8 +146,7 @@ public class Main extends Application {
 		vboxManag.setPadding(new Insets(10));
 		vboxManag.setPrefWidth(300);
 
-		HBox hboxTogether = new HBox(20, gp, vboxEmps, vboxManag);
-		return hboxTogether;
+        return new HBox(20, gp, vboxEmps, vboxManag);
 
 	}
 

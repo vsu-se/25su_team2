@@ -1,1 +1,35 @@
 /* JavaFX CSS - Leave this comment until you have at least create one rule which uses -fx-Property */
+.root {
+    -fx-padding: 10px;
+}
+
+GridPane {
+    -fx-hgap: 10px;
+    -fx-vgap: 10px;
+}
+
+.vbox {
+    -fx-border-color: pink;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-padding: 10px;
+    -fx-spacing: 5px;
+    -fx-background-color: white;
+}
+
+.list-cell:even {
+    -fx-background-color: white;
+}
+
+.list-cell:odd {
+    -fx-background-color: pink;
+}
+
+.list-cell {
+    -fx-border-color: pink;
+}
+
+.button:hover {
+    -fx-text-fill: blue;
+}
+

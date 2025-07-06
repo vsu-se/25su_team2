@@ -51,7 +51,7 @@ public class Main extends Application {
 	protected TextArea txaReport = new TextArea();
 
 	//To store current log in user (Not use if I'll keep this variable yet, depends on application in the Employee class)
-	private Employee loggedInUser = null;
+    //private Employee loggedInUser = null;
 
 	@Override
 	public void start(Stage primaryStage) {

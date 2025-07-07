@@ -41,4 +41,31 @@ public class Manager extends Employee {
 	    // 5. Success!
 	    return (Manager) found;
 	}
+	
+	public void addEmployee(List<Employee> employees,
+                        Employee newEmp,
+                        int[] weeklyHours) {
+		
+    // ensure unique username
+    for (Employee e : employees) {
+        if (e.getUsername().equals(newEmp.getUsername())) {
+            throw new IllegalArgumentException(
+                "Username already exists: " + newEmp.getUsername()
+            );
+        }
+    }
+
+    // register the new hire
+    employees.add(newEmp);
+
+    // initialize weekly hours via setHours (ignores invalid day/hour)
+    if (weeklyHours != null) {
+        if (weeklyHours.length != 7) {
+            throw new IllegalArgumentException("weeklyHours must have length 7");
+        }
+        for (int day = 0; day < 7; day++) {
+            newEmp.setHours(day, weeklyHours[day]);
+        }
+    }
+}
 }

@@ -70,6 +70,14 @@ public abstract class Employee {
 		return hours;
 	}
 	
+	public int getTotalHours() {
+	    int total = 0;
+	    for (int h : getHours()) {
+	        total += h;
+	    }
+	    return total;
+	}
+	
 	public String getFullName() {
 		return firstName + " " + lastName;
 	}

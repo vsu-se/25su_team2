@@ -8,20 +8,24 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 public class Main extends Application {
+	private DataHandler handler = new DataHandler("employees.txt");
 
 	// Data from Manager class
-//	public static Manager empManager = new Manager(employee);
+	// public static Manager empManager = new Manager(employee);
 
-	//GUI base structure  --------------------------------------------------------------------------------------
+	// GUI base structure
+	// --------------------------------------------------------------------------------------
 	protected TabPane tabPane = new TabPane();
 
-	// Tab 1: Login ----------------------------------------------------------------------------------------------------
+	// Tab 1: Login
+	// ----------------------------------------------------------------------------------------------------
 	protected TextField txtLoginUsername = new TextField();
 	protected PasswordField txtLoginPassword = new PasswordField();
 	protected Button btnLogin = new Button("Login");
 	protected Label lblLoginMessage = new Label();
 
-	// Tab 2: Employee Management -------------------------------------------------------------------------------------
+	// Tab 2: Employee Management
+	// -------------------------------------------------------------------------------------
 	protected Button btnAddEmployee = new Button("Add Employee");
 	protected ListView<String> listEmps = new ListView<>();
 	protected ListView<String> listManags = new ListView<>();
@@ -36,22 +40,24 @@ public class Main extends Application {
 	protected ComboBox<String> cmbRole = new ComboBox<>();
 	protected TextArea txaEmpMessage = new TextArea();
 	protected TextArea txaManagsMessage = new TextArea();
-	
 
-	// Tab 3: Hours Entry, both Employee and Manager -------------------------------------------------------------------
+	// Tab 3: Hours Entry, both Employee and Manager
+	// -------------------------------------------------------------------
 	protected ComboBox<String> EmpSelected = new ComboBox<>();
 	protected TextField[] txtHoursPerDay = new TextField[7];
 	protected CheckBox[] PTOPerDay = new CheckBox[7];
 	protected Button btnSubmitHours = new Button("Submit Hours");
 	protected TextArea txaHoursMessage = new TextArea();
 
-	// Tab 4: Payroll Reports, both Employee and Manager  -------------------------------------------------------------
+	// Tab 4: Payroll Reports, both Employee and Manager
+	// -------------------------------------------------------------
 	protected ComboBox<String> cmbReportEmployee = new ComboBox<>();
 	protected Button btnViewReport = new Button("View Report");
 	protected TextArea txaReport = new TextArea();
 
-	//To store current log in user (Not use if I'll keep this variable yet, depends on application in the Employee class)
-    //private Employee loggedInUser = null;
+	// To store current log in user (Not use if I'll keep this variable yet, depends
+	// on application in the Employee class)
+	// private Employee loggedInUser = null;
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -70,16 +76,19 @@ public class Main extends Application {
 		BorderPane brdPane = new BorderPane();
 		tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-		// Create Tabs---------------------------------------------------------------------------
+		// Create
+		// Tabs---------------------------------------------------------------------------
 		Tab tabLogin = new Tab("Login", buildLoginTab());
 		Tab tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab());
 		Tab tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab());
 		Tab tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab());
 
-		// Add tabs to TabPane ------------------------------------------------------------------
+		// Add tabs to TabPane
+		// ------------------------------------------------------------------
 		tabPane.getTabs().addAll(tabLogin, tabEmployeeMgmt, tabHoursEntry, tabPayrollReports);
 
-		// Disable tabs except for the log in tab --------------------------------------------------
+		// Disable tabs except for the log in tab
+		// --------------------------------------------------
 		tabEmployeeMgmt.setDisable(false);
 		tabHoursEntry.setDisable(false);
 		tabPayrollReports.setDisable(false);
@@ -102,7 +111,44 @@ public class Main extends Application {
 		grid.add(btnLogin, 1, 2);
 		grid.add(lblLoginMessage, 1, 3);
 
-//		btnLogin.setOnAction(new LoginHandler());
+		btnLogin.setOnAction(e -> {
+			String inputUsername = txtLoginUsername.getText().trim();
+			String inputPassword = txtLoginPassword.getText().trim();
+
+			boolean found = false;
+
+			for (Manager m : handler.getManagers()) {
+				if (m.getUsername().equalsIgnoreCase(inputUsername)) {
+					if (m.authenticate(inputPassword)) {
+						lblLoginMessage.setText("Welcome Manager: " + m.getFullName());
+						found = true;
+						break;
+					} else {
+						lblLoginMessage.setText("Incorrect password.");
+						return;
+					}
+				}
+			}
+
+			if (!found) {
+				for (Staff s : handler.getStaff()) {
+					if (s.getUsername().equalsIgnoreCase(inputUsername)) {
+						if (s.authenticate(inputPassword)) {
+							lblLoginMessage.setText("Welcome Staff: " + s.getFullName());
+							found = true;
+							break;
+						} else {
+							lblLoginMessage.setText(" Incorrect password.");
+							return;
+						}
+					}
+				}
+			}
+
+			if (!found) {
+				lblLoginMessage.setText("Username not found.");
+			}
+		});
 
 		return grid;
 	}
@@ -146,7 +192,7 @@ public class Main extends Application {
 		vboxManag.setPadding(new Insets(10));
 		vboxManag.setPrefWidth(300);
 
-        return new HBox(20, gp, vboxEmps, vboxManag);
+		return new HBox(20, gp, vboxEmps, vboxManag);
 
 	}
 
@@ -162,7 +208,7 @@ public class Main extends Application {
 		daysGrid.setHgap(10);
 		daysGrid.setVgap(10);
 
-		String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+		String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 		for (int i = 0; i < 7; i++) {
 			daysGrid.add(new Label(days[i]), 0, i);
 			TextField txtHours = new TextField();
@@ -173,7 +219,8 @@ public class Main extends Application {
 			CheckBox chkPTO = new CheckBox("PTO");
 			PTOPerDay[i] = chkPTO;
 			// PTO only allowed Mon-Fri
-			if (i >= 5) chkPTO.setDisable(true);
+			if (i >= 5)
+				chkPTO.setDisable(true);
 			daysGrid.add(chkPTO, 2, i);
 		}
 
@@ -201,17 +248,18 @@ public class Main extends Application {
 		return vbox;
 	}
 
-	// --- Event Handlers --- (Can work on these yet since Manager, Employee and Staff classes aren't done yet.)
+	// --- Event Handlers --- (Can work on these yet since Manager, Employee and
+	// Staff classes aren't done yet.)
 
 	// Login Handler
 	// Add Employee Handler
 	// Submit Hours Handler
 	// View Report Handler
-	//Others: Any additional method not found in the main classes
+	// Others: Any additional method not found in the main classes
 
 	public static void main(String[] args) {
+		System.out.println(" Passwords have been hashed and saved. You can now remove this block.");
+
 		launch(args);
 	}
 }
-
-

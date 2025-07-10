@@ -34,8 +34,18 @@ public abstract class Employee {
 		return username;
 	}
 	
-	public boolean authenticate (String candidate) {
-		return candidate != null && candidate.equals(this.password);
+	String getPassword() { // could not find a way to not have a getPassword method with just using txt file more research req.
+		return password;
+	}
+	
+	void setHashedPassword(String hashedPassword) {
+		this.password = hashedPassword;
+	}
+	
+	public boolean authenticate(String candidate) {
+	    if (candidate == null) return false;
+	    String hashed = DataHandler.hashPassword(candidate);
+	    return hashed.equals(this.password);
 	}
 	
 	public String getDepartment() {
@@ -58,8 +68,6 @@ public abstract class Employee {
 		return String.format("%04d", employeeID);
 	}
 	
-	
-	
 	public void setHours(int day, int hours) {
 		if((day >= 0 && day < 7)&&(hours >=0 && hours <=24)) {
 			this.hours[day] = hours;
@@ -71,7 +79,7 @@ public abstract class Employee {
 	}
 	
 	public String getFullName() {
-		return firstName + " " + lastName;
+		return firstName + " " + lastName + "(Username : " + username + ")";
 	}
 
 }

@@ -1,5 +1,9 @@
 package application;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
@@ -40,6 +44,14 @@ public class Main extends Application {
 	protected ComboBox<String> cmbRole = new ComboBox<>();
 	protected TextArea txaEmpMessage = new TextArea();
 	protected TextArea txaManagsMessage = new TextArea();
+	
+	// Comparator to sort by lastName → firstName → department → employeeID
+	private final Comparator<Employee> EMP_CMP = Comparator
+		    .comparing(Employee::getLastName)
+		    .thenComparing(Employee::getFirstName)
+		    .thenComparing(Employee::getDepartment)
+		    .thenComparing(Employee::getEmployeeID);
+
 
 	// Tab 3: Hours Entry, both Employee and Manager
 	// -------------------------------------------------------------------
@@ -58,7 +70,7 @@ public class Main extends Application {
 	// To store current log in user (Not use if I'll keep this variable yet, depends
 	// on application in the Employee class)
 	// private Employee loggedInUser = null;
-
+	
 	@Override
 	public void start(Stage primaryStage) {
 		try {
@@ -121,6 +133,13 @@ public class Main extends Application {
 				if (m.getUsername().equalsIgnoreCase(inputUsername)) {
 					if (m.authenticate(inputPassword)) {
 						lblLoginMessage.setText("Welcome Manager: " + m.getFullName());
+					    //after Manager authenticates
+						loadEmployeeManagementData();
+					    tabPane.getTabs().get(1).setDisable(false);
+					    tabPane.getSelectionModel().select(1);
+						// enable & switch to the Employee Management tab
+						tabPane.getTabs().get(1).setDisable(false);
+						tabPane.getSelectionModel().select(1);
 						found = true;
 						break;
 					} else {
@@ -182,7 +201,41 @@ public class Main extends Application {
 		gp.add(cmbRole, 1, 8);
 		gp.add(btnAddEmployee, 1, 9);
 
-//		btnAddEmployee.setOnAction(new AddEmployeeHandler());
+		btnAddEmployee.setOnAction(evt -> {
+		    try {
+		        String fn   = txtFFirstName.getText().trim();
+		        String ln   = txtFLastName.getText().trim();
+		        String un   = txtFUsername.getText().trim();
+		        String pw   = txtFPassword.getText();    // plain
+		        String dept = txtFDepartment.getText().trim();
+		        double pr   = Double.parseDouble(txtFPayRate.getText());
+		        double tr   = Double.parseDouble(txtFTaxRate.getText());
+		        int    pto  = Integer.parseInt(txtFPTO.getText());
+		        boolean isMgr = "Manager".equals(cmbRole.getValue());
+
+		        boolean added;
+		        if (isMgr) {
+		            Manager m = new Manager(fn, ln, un, pw, dept, pr, tr, pto);
+		            added = handler.addManager(m);
+		            if (added) txaEmpMessage.setText("Added Manager: " + m.getFullName());
+		        }
+		        else {
+		            Staff s = new Staff(fn, ln, un, pw, dept, pr, tr, pto);
+		            added = handler.addStaff(s);
+		            if (added) txaEmpMessage.setText("Added Staff: " + s.getFullName());
+		        }
+
+		        if (!added) {
+		            txaEmpMessage.setText("Username already exists: " + un);
+		        } else {
+		        	//after addStaff/addManager succeeds
+		            loadEmployeeManagementData();
+		        }
+		    }
+		    catch (Exception ex) {
+		        txaEmpMessage.setText("Error: " + ex.getMessage());
+		    }
+		});
 
 		VBox vboxEmps = new VBox(10, new Label("Employees:"), listEmps, txaEmpMessage);
 		vboxEmps.setPadding(new Insets(10));
@@ -247,7 +300,52 @@ public class Main extends Application {
 
 		return vbox;
 	}
+	
+	/**
+	 * Build one line showing all fields except password,
+	 * and prefix "(Manager)" if the instance is a Manager.
+	 */
+	private String formatEmployeeEntry(Employee e) {
+	    String label = (e instanceof Manager) ? "(Manager) " : "";
+	    return String.format(
+	        "%s%s, %s – Dept: %s – ID: %s – PayRate: $%.2f – TaxRate: %.2f%% – PTO: %d",
+	        label,
+	        e.getLastName(),
+	        e.getFirstName(),
+	        e.getDepartment(),
+	        e.getEmployeeID(),
+	        e.getPayRate(),
+	        e.getTaxRate(),
+	        e.getPtoDays()
+	    );
+	}
+	
+	/** Populate listEmps with Staff only */
+	private void loadStaffList() {
+	    listEmps.getItems().clear();
 
+	    handler.getStaff().stream()
+	        .sorted(EMP_CMP)
+	        .map(this::formatEmployeeEntry)
+	        .forEach(listEmps.getItems()::add);
+	}
+
+	/** Populate listManags with Manager only */
+	private void loadManagerList() {
+	    listManags.getItems().clear();
+
+	    handler.getManagers().stream()
+	        .sorted(EMP_CMP)
+	        .map(this::formatEmployeeEntry)
+	        .forEach(listManags.getItems()::add);
+	}
+
+	/** Convenience: load both sides at once */
+	private void loadEmployeeManagementData() {
+	    loadStaffList();
+	    loadManagerList();
+	}
+	
 	// --- Event Handlers --- (Can work on these yet since Manager, Employee and
 	// Staff classes aren't done yet.)
 

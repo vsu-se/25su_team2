@@ -41,4 +41,18 @@ public class Manager extends Employee {
 	    // 5. Success!
 	    return (Manager) found;
 	}
+	
+	/** Serialize for file (8 fields, comma-delimited) */
+    public String toDataLine() {
+        return String.join(",",
+            getFirstName(),
+            getLastName(),
+            getUsername(),
+            getPassword(),     // already hashed
+            getDepartment(),
+            String.valueOf(getPayRate()),
+            String.valueOf(getTaxRate()),
+            String.valueOf(getPtoDays())
+        );
+    }
 }

@@ -2,17 +2,24 @@ package application;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class DataHandler {
+	private Path path;
 	private List<Manager> managers = new ArrayList<>();
 	private List<Staff> staff = new ArrayList<>();
 
 	public DataHandler(String filePath) {
+		this.path = Paths.get(filePath);
 		loadFile(filePath);
 	}
 
@@ -118,11 +125,31 @@ public class DataHandler {
 
 	    return false;
 	}
+	
+	private void persist() {
+        List<String> out = new ArrayList<>();
+        out.add("Managers:");
+        for (Manager m : managers) {
+            out.add(m.toDataLine());
+        }
+        out.add("Staff:");
+        for (Staff s : staff) {
+            out.add(s.toDataLine());
+        }
+        try {
+            Files.write(path, out,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            System.err.println("Error saving " + path + ": " + e.getMessage());
+        }
+    }
 
 	public boolean addManager(Manager m) {  // adds new manager to txt file but with a hashed password.
 	    if (usernameExists(m.getUsername())) return false;
 	    m.setHashedPassword(hashPassword(m.getPassword()));
 	    managers.add(m);
+        persist();                  // ← write out the file
 	    return true;
 	}
 
@@ -130,6 +157,9 @@ public class DataHandler {
 	    if (usernameExists(s.getUsername())) return false;
 	    s.setHashedPassword(hashPassword(s.getPassword()));
 	    staff.add(s);
+        persist();                  // ← write out the file
 	    return true;
 	}
+	
+
 }

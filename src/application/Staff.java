@@ -6,4 +6,18 @@ public class Staff extends Employee {
 				double taxRate, int ptoDays) {
 		super(firstName, lastName, username, password, department, payRate, taxRate, ptoDays);
 	}
+	
+	/** Serialize for file (8 fields, comma-delimited) */
+    public String toDataLine() {
+        return String.join(",",
+            getFirstName(),
+            getLastName(),
+            getUsername(),
+            getPassword(),     // already hashed
+            getDepartment(),
+            String.valueOf(getPayRate()),
+            String.valueOf(getTaxRate()),
+            String.valueOf(getPtoDays())
+        );
+    }
 }

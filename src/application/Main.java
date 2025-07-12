@@ -1,16 +1,25 @@
 package application;
 
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import java.util.List;
+import java.util.ArrayList;
+
 
 public class Main extends Application {
 	private DataHandler handler = new DataHandler("employees.txt");
+	private Employee loggedInUser = null;
+	private Tab tabEmployeeMgmt;
+	private Tab tabHoursEntry;
+	private Tab tabPayrollReports;
 
-	// Data from Manager class
+
 	// public static Manager empManager = new Manager(employee);
 
 	// GUI base structure
@@ -26,7 +35,11 @@ public class Main extends Application {
 
 	// Tab 2: Employee Management
 	// -------------------------------------------------------------------------------------
+	protected Label lblWelcomeMng= new Label();
 	protected Button btnAddEmployee = new Button("Add Employee");
+	protected Label lblAddEmpMessage = new Label();
+	protected Button btnShowEmps = new Button("Show Employees");
+	protected Button btnShowManags = new Button("Show Managers");
 	protected ListView<String> listEmps = new ListView<>();
 	protected ListView<String> listManags = new ListView<>();
 	protected TextField txtFFirstName = new TextField();
@@ -55,15 +68,13 @@ public class Main extends Application {
 	protected Button btnViewReport = new Button("View Report");
 	protected TextArea txaReport = new TextArea();
 
-	// To store current log in user (Not use if I'll keep this variable yet, depends
 	// on application in the Employee class)
-	// private Employee loggedInUser = null;
 
 	@Override
 	public void start(Stage primaryStage) {
 		try {
 			Pane root = buildGui();
-			Scene scene = new Scene(root, 900, 700);
+			Scene scene = new Scene(root, 980, 700);
 			primaryStage.setScene(scene);
 			primaryStage.setTitle("Payroll System");
 			primaryStage.show();
@@ -79,9 +90,9 @@ public class Main extends Application {
 		// Create
 		// Tabs---------------------------------------------------------------------------
 		Tab tabLogin = new Tab("Login", buildLoginTab());
-		Tab tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab());
-		Tab tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab());
-		Tab tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab());
+		tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab());
+		tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab());
+		tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab());
 
 		// Add tabs to TabPane
 		// ------------------------------------------------------------------
@@ -89,9 +100,9 @@ public class Main extends Application {
 
 		// Disable tabs except for the log in tab
 		// --------------------------------------------------
-		tabEmployeeMgmt.setDisable(false);
-		tabHoursEntry.setDisable(false);
-		tabPayrollReports.setDisable(false);
+		tabEmployeeMgmt.setDisable(true);
+		tabHoursEntry.setDisable(true);
+		tabPayrollReports.setDisable(true);
 
 		brdPane.setCenter(tabPane);
 		return brdPane;
@@ -121,10 +132,24 @@ public class Main extends Application {
 				if (m.getUsername().equalsIgnoreCase(inputUsername)) {
 					if (m.authenticate(inputPassword)) {
 						lblLoginMessage.setText("Welcome Manager: " + m.getFullName());
+						lblLoginMessage.setStyle("-fx-text-fill: green;");
+						loggedInUser = m;
+
+						tabEmployeeMgmt.setDisable(false);
+						tabHoursEntry.setDisable(false);
+						tabPayrollReports.setDisable(false);
+
+						tabPane.getSelectionModel().select(tabEmployeeMgmt);
+
 						found = true;
 						break;
-					} else {
+					}
+					else {
 						lblLoginMessage.setText("Incorrect password.");
+						lblLoginMessage.setStyle("-fx-text-fill: red;");
+						tabEmployeeMgmt.setDisable(true);
+						tabHoursEntry.setDisable(true);
+						tabPayrollReports.setDisable(true);
 						return;
 					}
 				}
@@ -135,10 +160,22 @@ public class Main extends Application {
 					if (s.getUsername().equalsIgnoreCase(inputUsername)) {
 						if (s.authenticate(inputPassword)) {
 							lblLoginMessage.setText("Welcome Staff: " + s.getFullName());
+							lblLoginMessage.setStyle("-fx-text-fill: green;");
+							loggedInUser = s;
+
+							tabEmployeeMgmt.setDisable(true);
+							tabHoursEntry.setDisable(true);
+							tabPayrollReports.setDisable(true);
+
 							found = true;
 							break;
-						} else {
+						}
+						else {
 							lblLoginMessage.setText(" Incorrect password.");
+							lblLoginMessage.setStyle("-fx-text-fill: red;");
+							tabEmployeeMgmt.setDisable(true);
+							tabHoursEntry.setDisable(true);
+							tabPayrollReports.setDisable(true);
 							return;
 						}
 					}
@@ -147,6 +184,10 @@ public class Main extends Application {
 
 			if (!found) {
 				lblLoginMessage.setText("Username not found.");
+				lblLoginMessage.setStyle("-fx-text-fill: red;");
+				tabEmployeeMgmt.setDisable(true);
+				tabHoursEntry.setDisable(true);
+				tabPayrollReports.setDisable(true);
 			}
 		});
 
@@ -181,16 +222,99 @@ public class Main extends Application {
 		gp.add(new Label("Role:"), 0, 8);
 		gp.add(cmbRole, 1, 8);
 		gp.add(btnAddEmployee, 1, 9);
+		gp.add(lblAddEmpMessage, 1, 10);
 
-//		btnAddEmployee.setOnAction(new AddEmployeeHandler());
 
-		VBox vboxEmps = new VBox(10, new Label("Employees:"), listEmps, txaEmpMessage);
+		VBox vboxEmps = new VBox(10, new Label("Employees:"), btnShowEmps, listEmps);
 		vboxEmps.setPadding(new Insets(10));
-		vboxEmps.setPrefWidth(300);
+		vboxEmps.setPrefWidth(500);
 
-		VBox vboxManag = new VBox(10, new Label("Managers:"), listManags, txaManagsMessage);
+		VBox vboxManag = new VBox(10, new Label("Managers:"), btnShowManags, listManags);
 		vboxManag.setPadding(new Insets(10));
-		vboxManag.setPrefWidth(300);
+		vboxManag.setPrefWidth(500);
+
+
+		btnAddEmployee.setOnAction(event -> {
+			if (loggedInUser == null || !(loggedInUser instanceof Manager)) {
+				lblAddEmpMessage.setText("Access denied: Only managers can add employees.");
+				lblAddEmpMessage.setStyle("-fx-text-fill: red;");
+				return;
+			}
+			try {
+				String firstName = txtFFirstName.getText().trim();
+				String lastName = txtFLastName.getText().trim();
+				String username = txtFUsername.getText().trim();
+				String password = txtFPassword.getText().trim();
+				String department = txtFDepartment.getText().trim();
+				double payRate = Double.parseDouble(txtFPayRate.getText().trim());
+				double taxRate = Double.parseDouble(txtFTaxRate.getText().trim());
+				int ptoDays = Integer.parseInt(txtFPTO.getText().trim());
+				String role = cmbRole.getValue();
+
+				Employee newEmp;
+				if ("Manager".equalsIgnoreCase(role)) {
+					newEmp = new Manager(firstName, lastName, username, password, department, payRate, taxRate, ptoDays);
+				} else {
+					newEmp = new Staff(firstName, lastName, username, password, department, payRate, taxRate, ptoDays);
+				}
+
+				boolean added = handler.addEmployee(newEmp);
+
+				if (added) {
+					//Updates both mangers and staff employees
+					listEmps.getItems().clear();
+					for (Manager m : handler.getManagers()) {
+						listEmps.getItems().add(m.getFullName() + " (Manager)");
+					}
+					for (Staff s : handler.getStaff()) {
+						listEmps.getItems().add(s.getFullName() + " (Staff)");
+					}
+
+					// Update only managers employees
+					listManags.getItems().clear();
+					for (Manager m : handler.getManagers()) {
+						listManags.getItems().add(m.getFullName() + " (Manager)");
+					}
+
+					handler.saveToFile("employees.txt");
+
+					lblAddEmpMessage.setText("Employee added: " + newEmp.getFullName() + " (" + role + ")");
+					lblAddEmpMessage.setStyle("-fx-text-fill: green;");
+				}
+				else {
+					lblAddEmpMessage.setText("Username already exists. Choose another one.");
+					lblAddEmpMessage.setStyle("-fx-text-fill: red;");
+				}
+			} catch (Exception ex) {
+				lblAddEmpMessage.setText("Error adding employee: " + ex.getMessage());
+				lblAddEmpMessage.setStyle("-fx-text-fill: red;");
+			}
+		});
+
+		btnShowEmps.setOnAction(e -> {
+			listEmps.getItems().clear();
+			for (Employee emp : getSortedEmployees()) {
+				listEmps.getItems().add(formatEmployeeDisplay(emp));
+			}
+		});
+
+		btnShowManags.setOnAction(e -> {
+			listManags.getItems().clear();
+			List<Manager> sortedManagers = new ArrayList<>(handler.getManagers());
+			sortedManagers.sort((m1, m2) -> {
+				int cmp = m1.getLastName().compareToIgnoreCase(m2.getLastName());
+				if (cmp != 0) return cmp;
+				cmp = m1.getFirstName().compareToIgnoreCase(m2.getFirstName());
+				if (cmp != 0) return cmp;
+				cmp = m1.getDepartment().compareToIgnoreCase(m2.getDepartment());
+				if (cmp != 0) return cmp;
+				return m1.getEmployeeID().compareTo(m2.getEmployeeID());
+			});
+			for (Manager m : sortedManagers) {
+				listManags.getItems().add(formatEmployeeDisplay(m));
+			}
+		});
+
 
 		return new HBox(20, gp, vboxEmps, vboxManag);
 
@@ -248,17 +372,42 @@ public class Main extends Application {
 		return vbox;
 	}
 
-	// --- Event Handlers --- (Can work on these yet since Manager, Employee and
-	// Staff classes aren't done yet.)
+//	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
+	private String formatEmployeeDisplay(Employee emp) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("ID: ").append(emp.getEmployeeID());
+		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
+		sb.append(" | Username: ").append(emp.getUsername());
+		sb.append(" | Department: ").append(emp.getDepartment());
+		sb.append(" | Pay Rate: $").append(String.format("%.2f", emp.getPayRate()));
+		sb.append(" | Tax Rate: ").append(String.format("%.2f", emp.getTaxRate())).append("%");
+		sb.append(" | PTO: ").append(emp.getPtoDays()).append(" days");
+		if (emp instanceof Manager) {
+			sb.insert(0, ("MANAGER | "));
+		}
+		return sb.toString();
+	}
 
-	// Login Handler
-	// Add Employee Handler
-	// Submit Hours Handler
-	// View Report Handler
-	// Others: Any additional method not found in the main classes
+	private List<Employee> getSortedEmployees() {
+		List<Employee> allEmployees = new ArrayList<>();
+		allEmployees.addAll(handler.getManagers());
+		allEmployees.addAll(handler.getStaff());
+		allEmployees.sort((e1, e2) -> {
+			int cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
+			if (cmp != 0) return cmp;
+			cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
+			if (cmp != 0) return cmp;
+			cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
+			if (cmp != 0) return cmp;
+			return e1.getEmployeeID().compareTo(e2.getEmployeeID());
+		});
+		return allEmployees;
+	}
+
+
 
 	public static void main(String[] args) {
-		System.out.println(" Passwords have been hashed and saved. You can now remove this block.");
+		System.out.println("");
 
 		launch(args);
 	}

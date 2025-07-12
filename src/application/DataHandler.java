@@ -9,14 +9,46 @@ import java.util.List;
 import java.util.Scanner;
 
 public class DataHandler {
-	private List<Manager> managers = new ArrayList<>();
-	private List<Staff> staff = new ArrayList<>();
+	protected List<Manager> managers = new ArrayList<>();
+	protected List<Staff> staff = new ArrayList<>();
 
 	public DataHandler(String filePath) {
 		loadFile(filePath);
 	}
 
-//LOAD txt file for employee
+
+	public boolean usernameExists(String username) { //helper to check for duplicate managers and staff usernames.
+		for (Manager m : managers) {
+			if (m.getUsername().equalsIgnoreCase(username)) {
+				return true;
+			}
+		}
+
+		for (Staff s : staff) {
+			if (s.getUsername().equalsIgnoreCase(username)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
+	// Add Employee to the actual list
+	public boolean addEmployee(Employee emp) {
+		if (usernameExists(emp.getUsername())) {
+			return false;
+		}
+		if (emp instanceof Manager) {
+			managers.add((Manager) emp);
+		} else if (emp instanceof Staff) {
+			staff.add((Staff) emp);
+		}
+		return true; // Successfully added
+	}
+
+
+	//LOAD txt file for employee
 	private void loadFile(String filePath) {
 		try (Scanner scanner = new Scanner(new File(filePath))) {
 			String section = "";
@@ -102,22 +134,7 @@ public class DataHandler {
 	public List<Staff> getStaff() {// used to easily return list of staff, just need enhance for loop to print.
 		return staff;
 	}
-	
-	public boolean usernameExists(String username) { //helper to check for duplicate managers and staff usernames.
-	    for (Manager m : managers) {
-	        if (m.getUsername().equalsIgnoreCase(username)) {
-	            return true;
-	        }
-	    }
 
-	    for (Staff s : staff) {
-	        if (s.getUsername().equalsIgnoreCase(username)) {
-	            return true;
-	        }
-	    }
-
-	    return false;
-	}
 
 	public boolean addManager(Manager m) {  // adds new manager to txt file but with a hashed password.
 	    if (usernameExists(m.getUsername())) return false;

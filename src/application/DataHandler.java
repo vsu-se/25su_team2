@@ -126,30 +126,23 @@ public class DataHandler {
 	    return false;
 	}
 	
-	private void persist() {
-        List<String> out = new ArrayList<>();
-        out.add("Managers:");
-        for (Manager m : managers) {
-            out.add(m.toDataLine());
-        }
-        out.add("Staff:");
-        for (Staff s : staff) {
-            out.add(s.toDataLine());
-        }
-        try {
-            Files.write(path, out,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException e) {
-            System.err.println("Error saving " + path + ": " + e.getMessage());
-        }
-    }
+	/*
+	 * private void persist() { List<String> out = new ArrayList<>();
+	 * out.add("Managers:"); for (Manager m : managers) { out.add(m.toDataLine()); }
+	 * out.add("Staff:"); for (Staff s : staff) { out.add(s.toDataLine()); } try {
+	 * Files.write(path, out, StandardOpenOption.CREATE,
+	 * StandardOpenOption.TRUNCATE_EXISTING); } catch (IOException e) {
+	 * System.err.println("Error saving " + path + ": " + e.getMessage()); } }
+	 */
 
 	public boolean addManager(Manager m) {  // adds new manager to txt file but with a hashed password.
 	    if (usernameExists(m.getUsername())) return false;
 	    m.setHashedPassword(hashPassword(m.getPassword()));
 	    managers.add(m);
-        persist();                  // ← write out the file
+	    saveToFile("employees.txt");    // ← update file after adding
+	    								// persist(); ← alternative if using persist method
+	    								// note: you may want to parameterize the filename
+	    								// or store it as a class field
 	    return true;
 	}
 
@@ -157,7 +150,7 @@ public class DataHandler {
 	    if (usernameExists(s.getUsername())) return false;
 	    s.setHashedPassword(hashPassword(s.getPassword()));
 	    staff.add(s);
-        persist();                  // ← write out the file
+	    saveToFile("employees.txt");    // ← update file after adding
 	    return true;
 	}
 	

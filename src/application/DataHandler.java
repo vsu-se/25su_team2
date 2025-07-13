@@ -46,7 +46,7 @@ public class DataHandler {
 	}
 
 
-	//LOAD txt file for employee
+//LOAD txt file for employee
 	private void loadFile(String filePath) {
 		try (Scanner scanner = new Scanner(new File(filePath))) {
 			String section = "";
@@ -89,7 +89,7 @@ public class DataHandler {
 		}
 	}
 
-//STORAGE OF EMPLOYEES
+//SAVE EMPLOYEES TO TXT FILE
 	public void saveToFile(String filePath) {
 		try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
 			writer.println("managers:");
@@ -124,7 +124,7 @@ public class DataHandler {
 		}
 	}
 
-//HELPERS
+//GETTERS
 	public List<Manager> getManagers() {// used to easily return list of managers, just need enhance for loop to print 
 		return managers;
 	}

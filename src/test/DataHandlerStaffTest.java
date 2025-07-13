@@ -6,8 +6,11 @@ import application.DataHandler;
 import application.Employee;
 import application.Staff;
 
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,10 +22,24 @@ import org.junit.jupiter.api.Test;
 
 class DataHandlerStaffTest {
     private DataHandler handler;
+    private static final String TEST_FILE = "test_employees.txt";
 
     @BeforeEach
-    void setUp() {
-        handler = new DataHandler("test_employees.txt");
+    void setUp() throws IOException {
+        Path p = Paths.get(TEST_FILE);
+
+        // 1) delete old file if it exists
+        Files.deleteIfExists(p);
+
+        // 2) create brand-new file with required headers
+        Files.write(p,
+            List.of("managers:", "", "staff:"),
+            StandardOpenOption.CREATE, 
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
+
+        // 3) inject the test filename into your handler
+        handler = new DataHandler(TEST_FILE);
     }
 
     @Test

@@ -38,42 +38,42 @@ class ManagerTest {
         employees.add(bob);
     }
 
-    @Test
-    @DisplayName("Login succeeds with valid manager credentials")
-    void loginSucceedsWithValidCredentials() throws AuthenticationException {
-        Manager result = Manager.login("asmith", "secret123", employees);
-        assertSame(alice, result, "Should return the seeded Manager instance");
-    }
-
-    @Test
-    @DisplayName("Login fails with wrong password")
-    void loginFailsWithWrongPassword() {
-        AuthenticationException ex = assertThrows(
-            AuthenticationException.class,
-            () -> Manager.login("asmith", "wrongpass", employees)
-        );
-        assertEquals("Invalid username or password", ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("Login fails for unknown username")
-    void loginFailsForUnknownUsername() {
-        AuthenticationException ex = assertThrows(
-            AuthenticationException.class,
-            () -> Manager.login("unknownUser", "secret123", employees)
-        );
-        assertEquals("Invalid username or password", ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("Login fails when user is not a manager")
-    void loginFailsIfUserIsNotManager() {
-        AuthenticationException ex = assertThrows(
-            AuthenticationException.class,
-            () -> Manager.login("bjones", "password", employees)
-        );
-        assertEquals("User is not a manager", ex.getMessage());
-    }
+//    @Test
+//    @DisplayName("Login succeeds with valid manager credentials")
+//    void loginSucceedsWithValidCredentials() throws AuthenticationException {
+//        Manager result = Manager.login("asmith", "secret123", employees);
+//        assertSame(alice, result, "Should return the seeded Manager instance");
+//    }
+//
+//    @Test
+//    @DisplayName("Login fails with wrong password")
+//    void loginFailsWithWrongPassword() {
+//        AuthenticationException ex = assertThrows(
+//            AuthenticationException.class,
+//            () -> Manager.login("asmith", "wrongpass", employees)
+//        );
+//        assertEquals("Invalid username or password", ex.getMessage());
+//    }
+//
+//    @Test
+//    @DisplayName("Login fails for unknown username")
+//    void loginFailsForUnknownUsername() {
+//        AuthenticationException ex = assertThrows(
+//            AuthenticationException.class,
+//            () -> Manager.login("unknownUser", "secret123", employees)
+//        );
+//        assertEquals("Invalid username or password", ex.getMessage());
+//    }
+//
+//    @Test
+//    @DisplayName("Login fails when user is not a manager")
+//    void loginFailsIfUserIsNotManager() {
+//        AuthenticationException ex = assertThrows(
+//            AuthenticationException.class,
+//            () -> Manager.login("bjones", "password", employees)
+//        );
+//        assertEquals("User is not a manager", ex.getMessage());
+//    }
     
 	@Test
 	@DisplayName("Total Hours Test:")

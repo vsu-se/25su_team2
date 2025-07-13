@@ -89,5 +89,10 @@ public abstract class Employee {
 		              .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
 		              .thenComparing(Employee::getDepartment, String.CASE_INSENSITIVE_ORDER)
 		              .thenComparing(Employee::getEmployeeID);
-
+	
+	public static final Comparator<Employee> BY_DEPARTMENT = Comparator
+		    .comparing(Employee::getDepartment, String.CASE_INSENSITIVE_ORDER)
+		    .thenComparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
+		    .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
+		    .thenComparing(Employee::getEmployeeID);
 }

@@ -141,26 +141,9 @@ public class DataHandler {
 		return allEmps;
 	}
 
-	public List <Employee> getEmployeesByDepartment(){
-		List<Employee> empsByDep = getAllEmps();
-		Collections.sort(empsByDep, new Comparator<Employee>(){
-			@Override
-			public int compare(Employee e1, Employee e2) {
-				int cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
-				if (cmp != 0) {
-					return cmp;
-				}
-				cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
-				if (cmp != 0) {
-					return cmp;
-				}
-				cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
-				if (cmp != 0) {
-					return cmp;
-				}
-				return e1.getEmployeeID().compareTo(e2.getEmployeeID());
-			}
-		});
-		return empsByDep;
+	public List<Employee> getEmployeesByDepartment() {
+	    List<Employee> emps = getAllEmps();
+	    emps.sort(Employee.BY_DEPARTMENT);
+	    return emps;
 	}
 }

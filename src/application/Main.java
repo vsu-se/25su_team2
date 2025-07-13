@@ -14,6 +14,7 @@ import java.util.ArrayList;
 
 public class Main extends Application {
 	private DataHandler handler = new DataHandler("employees.txt");
+	private WeekRepository weekRepo = new WeekRepository();
 	private Employee loggedInUser = null;
 	private Tab tabEmployeeMgmt;
 	private Tab tabHoursEntry;
@@ -373,6 +374,7 @@ public class Main extends Application {
 		String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 		for (int i = 0; i < 7; i++) {
 			daysGrid.add(new Label(days[i]), 0, i);
+
 			TextField txtHours = new TextField();
 			txtHours.setPromptText("Hours");
 			txtHoursPerDay[i] = txtHours;
@@ -381,8 +383,10 @@ public class Main extends Application {
 			CheckBox chkPTO = new CheckBox("PTO");
 			PTOPerDay[i] = chkPTO;
 
-			if (i >= 5)
+			if (i >= 5) {
 				chkPTO.setDisable(true);
+			}
+
 			daysGrid.add(chkPTO, 2, i);
 		}
 
@@ -390,16 +394,83 @@ public class Main extends Application {
 		vbox.getChildren().add(btnSubmitHours);
 		vbox.getChildren().add(txaHoursMessage);
 
+		// Populate employee ComboBox
 		EmpSelected.getItems().clear();
 		for (Manager m : handler.getManagers()) {
-			EmpSelected.getItems().add(m.getFullName());
+			EmpSelected.getItems().add(m.getUsername());
 		}
 		for (Staff s : handler.getStaff()) {
-			EmpSelected.getItems().add(s.getFullName());
+			EmpSelected.getItems().add(s.getUsername());
 		}
+
+		// Submit hours action
+		btnSubmitHours.setOnAction(e -> {
+			String selectedUsername = EmpSelected.getValue();
+			if (selectedUsername == null) {
+				txaHoursMessage.setText("Please select an employee.");
+				return;
+			}
+
+			Employee emp = null;
+			for (Manager m : handler.getManagers()) {
+				if (m.getUsername().equalsIgnoreCase(selectedUsername)) {
+					emp = m;
+					break;
+				}
+			}
+			if (emp == null) {
+				for (Staff s : handler.getStaff()) {
+					if (s.getUsername().equalsIgnoreCase(selectedUsername)) {
+						emp = s;
+						break;
+					}
+				}
+			}
+
+			if (emp == null) {
+				txaHoursMessage.setText("Employee not found.");
+				return;
+			}
+
+			int[] hours = new int[7];
+			boolean[] pto = new boolean[7];
+
+			try {
+				//fill the array with valid hours and PTO day
+				for (int i = 0; i < 7; i++) {
+					String input = txtHoursPerDay[i].getText().trim();
+					hours[i] = input.isEmpty() ? 0 : Integer.parseInt(input);
+					if (hours[i] < 0 || hours[i] > 24) {
+						throw new NumberFormatException("Hours must be between 0 and 24 for day " + (i + 1));
+					}
+					pto[i] = PTOPerDay[i].isSelected();
+				}
+				
+				//calculate week, construct the week obj, and then store in weekRepo
+				int nextWeekNum = weekRepo.getRecordsForEmployee(emp.getEmployeeID()).size() + 1;
+				Week week = new Week(emp.getEmployeeID(), nextWeekNum, hours, pto);
+				weekRepo.addRecord(week);
+				
+				//validate success for user
+				txaHoursMessage.setText("Hours for Week " + nextWeekNum + " recorded for " + emp.getFullName());
+				txaHoursMessage.setStyle("-fx-text-fill: green;");
+				
+				//clear week obj; ready for next week input
+				for (int i = 0; i < 7; i++) {
+					txtHoursPerDay[i].clear();
+					PTOPerDay[i].setSelected(false);
+				}
+			
+		
+			} catch (NumberFormatException ex) {
+				txaHoursMessage.setText("Invalid input: " + ex.getMessage());
+				txaHoursMessage.setStyle("-fx-text-fill: red;");
+			}
+		});
 
 		return vbox;
 	}
+
 
 	// ----- Payroll Reports Tab ----------------------------------
 	private Pane buildPayrollReportsTab() {

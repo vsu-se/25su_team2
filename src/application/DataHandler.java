@@ -14,7 +14,7 @@ public class DataHandler {
 		loadFile(filePath);
 	}
 
-
+//PREVENT DUPLICATE USERNAMES
 	public boolean usernameExists(String username) { //helper to check for duplicate managers and staff usernames.
 		for (Manager m : managers) {
 			if (m.getUsername().equalsIgnoreCase(username)) {
@@ -32,7 +32,7 @@ public class DataHandler {
 	}
 
 
-	// Add Employee to the actual list
+// Add Employee to the actual list
 	public boolean addEmployee(Employee emp) {
 		emp.setHashedPassword(hashPassword(emp.getPassword()));
 		if (usernameExists(emp.getUsername())) {
@@ -141,10 +141,16 @@ public class DataHandler {
 
 		return allEmps;
 	}
+	
+	public List<Employee> getEmployeesInDepartment(String departmentName) {
+		    List<Employee> emps = new ArrayList<>();
 
-	public List<Employee> getEmployeesByDepartment() {
-	    List<Employee> emps = getAllEmps();
-	    emps.sort(Employee.BY_DEPARTMENT);
-	    return emps;
+		    for (Employee e : getAllEmps()) {
+		        if (e.getDepartment().equalsIgnoreCase(departmentName)) {
+		            emps.add(e);
+		        }
+		    }
+		    emps.sort(Employee.BY_DEPARTMENT);
+		    return emps;
 	}
 }

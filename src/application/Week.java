@@ -1,5 +1,7 @@
 package application;
 
+import java.util.*;
+
 public class Week {
 	private String employeeId;
 	private int weekNumber;
@@ -56,6 +58,14 @@ public class Week {
 		}
 
 		return new Week(id, week, hrs, pto);
+	}
+
+	public void setHours(int[] hours) {
+		this.hours = Arrays.copyOf(hours, hours.length);
+	}
+	
+	public void setIsPTO(boolean[] isPTO) {
+	    this.isPTO = Arrays.copyOf(isPTO, isPTO.length);
 	}
 }
 

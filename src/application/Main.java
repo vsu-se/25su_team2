@@ -39,8 +39,10 @@ public class Main extends Application {
 	protected Button btnAddEmployee = new Button("Add Employee");
 	protected Label lblAddEmpMessage = new Label();
 	protected Button btnShowEmps = new Button("Show Employees");
+	protected Button btnShowEmpsByDep = new Button("Show Employees By Department");
 	protected Button btnShowManags = new Button("Show Managers");
 	protected ListView<String> listEmps = new ListView<>();
+	protected ListView<String> listEmpsByDep = new ListView<>();
 	protected ListView<String> listManags = new ListView<>();
 	protected TextField txtFFirstName = new TextField();
 	protected TextField txtFLastName = new TextField();
@@ -225,9 +227,10 @@ public class Main extends Application {
 		gp.add(lblAddEmpMessage, 1, 10);
 
 
-		VBox vboxEmps = new VBox(10, new Label("Employees:"), btnShowEmps, listEmps);
+		VBox vboxEmps = new VBox(10, new Label("Employees:"), btnShowEmps, btnShowEmpsByDep, listEmps);
 		vboxEmps.setPadding(new Insets(10));
 		vboxEmps.setPrefWidth(500);
+
 
 		VBox vboxManag = new VBox(10, new Label("Managers:"), btnShowManags, listManags);
 		vboxManag.setPadding(new Insets(10));
@@ -295,6 +298,13 @@ public class Main extends Application {
 			listEmps.getItems().clear();
 			for (Employee emp : getSortedEmployees()) {
 				listEmps.getItems().add(formatEmployeeDisplay(emp));
+			}
+		});
+
+		btnShowEmpsByDep.setOnAction(actionEvent -> {
+			listEmps.getItems().clear();
+			for (Employee emp : handler.getEmployeesByDepartment()) {
+				listEmps.getItems().add(formatEmployeeByDep(emp));
 			}
 		});
 
@@ -373,6 +383,7 @@ public class Main extends Application {
 	}
 
 //	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
+
 	private String formatEmployeeDisplay(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("ID: ").append(emp.getEmployeeID());
@@ -384,6 +395,23 @@ public class Main extends Application {
 		sb.append(" | PTO: ").append(emp.getPtoDays()).append(" days");
 		if (emp instanceof Manager) {
 			sb.insert(0, ("MANAGER | "));
+		}
+		else{
+			sb.insert(0,("STAFF | "));
+		}
+		return sb.toString();
+	}
+
+	private String formatEmployeeByDep(Employee emp) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
+		sb.append("| ID: ").append(emp.getEmployeeID());
+		sb.append("| Department: ").append(emp.getDepartment());
+		if (emp instanceof Manager) {
+			sb.insert(0, ("MANAGER | "));
+		}
+		else{
+			sb.insert(0,("STAFF | "));
 		}
 		return sb.toString();
 	}

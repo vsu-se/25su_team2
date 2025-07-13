@@ -36,6 +36,23 @@ class DataHandlerManagerTest {
                    .anyMatch(x -> x.getUsername().equalsIgnoreCase("achen")));
     }
 
+
+  @Test
+  void addManager_notSavedToFile() throws Exception {
+	  String filePath = "test_employees.txt";
+	  Manager m1 = new Manager("Bob", "Lee", "blee", "pw", "SALES", 30.0, 20.0, 8);
+	  Manager m2 = new Manager("Ben", "Li", "blee", "pw", "SALES", 30.0, 20.0, 8);
+
+	  handler.addEmployee(m1);
+	  handler.addEmployee(m2); // Should not be added
+	  handler.saveToFile(filePath);
+	  
+	  long count = Files.lines(Paths.get(filePath))
+        .filter(line -> line.contains("blee"))
+        .count();
+	  assertEquals(1, count); // Only one "blee" should be saved
+}
+    
     @Test
     void addManager_duplicateUsername_fails() {
         Manager m1 = new Manager("Bob", "Lee", "blee", "pw", "SALES", 30.0, 20.0, 8);

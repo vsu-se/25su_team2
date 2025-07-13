@@ -61,8 +61,12 @@ public class Main extends Application {
 	protected ComboBox<String> EmpSelected = new ComboBox<>();
 	protected TextField[] txtHoursPerDay = new TextField[7];
 	protected CheckBox[] PTOPerDay = new CheckBox[7];
+	private static final String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 	protected Button btnSubmitHours = new Button("Submit Hours");
 	protected TextArea txaHoursMessage = new TextArea();
+	protected ComboBox<String> cmbDisplayEmployee = new ComboBox<>();
+	protected TextArea txaDisplayHours = new TextArea();
+
 
 	// Tab 4: Payroll Reports, both Employee and Manager
 	// -------------------------------------------------------------
@@ -361,15 +365,11 @@ public class Main extends Application {
 
 	// ----- Hours Entry Tab ----------------------------------------
 	private Pane buildHoursEntryTab() {
-		VBox vbox = new VBox(10);
-		vbox.setPadding(new Insets(10));
-
-		vbox.getChildren().add(new Label("Select Employee:"));
-		vbox.getChildren().add(EmpSelected);
 
 		GridPane daysGrid = new GridPane();
 		daysGrid.setHgap(10);
 		daysGrid.setVgap(10);
+		daysGrid.setPadding(new Insets(10));
 
 		String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 		for (int i = 0; i < 7; i++) {
@@ -386,15 +386,10 @@ public class Main extends Application {
 			if (i >= 5) {
 				chkPTO.setDisable(true);
 			}
-
 			daysGrid.add(chkPTO, 2, i);
 		}
 
-		vbox.getChildren().add(daysGrid);
-		vbox.getChildren().add(btnSubmitHours);
-		vbox.getChildren().add(txaHoursMessage);
-
-		// Populate employee ComboBox
+		// cmb to verify if hours got saved
 		EmpSelected.getItems().clear();
 		for (Manager m : handler.getManagers()) {
 			EmpSelected.getItems().add(m.getUsername());
@@ -403,7 +398,38 @@ public class Main extends Application {
 			EmpSelected.getItems().add(s.getUsername());
 		}
 
+		// cmb for one employee's hours
+		cmbDisplayEmployee.getItems().clear();
+		for (Manager m : handler.getManagers()) {
+			cmbDisplayEmployee.getItems().add(m.getUsername());
+		}
+		for (Staff s : handler.getStaff()) {
+			cmbDisplayEmployee.getItems().add(s.getUsername());
+		}
+
+		txaDisplayHours.setEditable(false);
+
+		VBox vboxLeft = new VBox(5);
+		vboxLeft.setPadding(new Insets(0, 5, 0, 0));
+		vboxLeft.getChildren().addAll(new Label("Select Employee:"), EmpSelected, daysGrid, btnSubmitHours);
+		txaHoursMessage.setPrefHeight(80);
+		txaHoursMessage.setPrefWidth(40);
+		vboxLeft.getChildren().add(txaHoursMessage);
+
+
+		VBox vboxRight = new VBox(5);
+		vboxRight.setPadding(new Insets(0, 0, 0, 5));
+		vboxRight.getChildren().addAll(new Label("Select Employee to Display Hours:"), cmbDisplayEmployee, txaDisplayHours);
+		txaDisplayHours.setPrefHeight(180);
+		txaDisplayHours.setPrefWidth(300);
+
+		// Both boxes alligned
+		HBox hbox = new HBox(2);
+		hbox.setPadding(new Insets(10));
+		hbox.getChildren().addAll(vboxLeft, vboxRight);
+
 		// Submit hours action
+
 		btnSubmitHours.setOnAction(e -> {
 			String selectedUsername = EmpSelected.getValue();
 			if (selectedUsername == null) {
@@ -462,13 +488,47 @@ public class Main extends Application {
 				}
 			
 		
-			} catch (NumberFormatException ex) {
+			}
+			catch (NumberFormatException ex) {
 				txaHoursMessage.setText("Invalid input: " + ex.getMessage());
 				txaHoursMessage.setStyle("-fx-text-fill: red;");
 			}
 		});
 
-		return vbox;
+		cmbDisplayEmployee.setOnAction(e -> {
+			String selectedUser = cmbDisplayEmployee.getValue();
+			if (selectedUser == null) {
+				txaDisplayHours.clear();
+				return;
+			}
+
+			List<Week> weeks = weekRepo.getRecordsForEmployee(selectedUser);
+			if (weeks.isEmpty()) {
+				txaDisplayHours.setText("No hours recorded for this employee.");
+				return;
+			}
+
+			Week currentWeek = weeks.get(weeks.size() - 1); // latest week
+			int[] hours = currentWeek.getHours();
+			boolean[] pto = currentWeek.getIsPTO();
+
+			StringBuilder sb = new StringBuilder();
+			sb.append("Hours worked for Week ").append(currentWeek.getWeekNumber()).append(":\n");
+			int totalHours = 0;
+			for (int i = 0; i < 7; i++) {
+				sb.append(days[i]).append(": ").append(hours[i]);
+				if (pto[i]) sb.append(" (PTO)");
+				sb.append("\n");
+				totalHours += hours[i];
+			}
+			sb.append("Total Hours: ").append(totalHours);
+
+			txaDisplayHours.setText(sb.toString());
+		});
+
+
+
+		return hbox;
 	}
 
 
@@ -482,7 +542,7 @@ public class Main extends Application {
 		vbox.getChildren().add(btnViewReport);
 		vbox.getChildren().add(txaReport);
 
-//		btnViewReport.setOnAction(new ViewReportHandler());
+
 
 		return vbox;
 	}

@@ -34,6 +34,7 @@ public class DataHandler {
 
 	// Add Employee to the actual list
 	public boolean addEmployee(Employee emp) {
+		emp.setHashedPassword(hashPassword(emp.getPassword()));
 		if (usernameExists(emp.getUsername())) {
 			return false;
 		}

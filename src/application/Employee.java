@@ -8,8 +8,6 @@ public abstract class Employee {
 	protected double payRate, taxRate;
 	protected int ptoDays;
 	protected int employeeID;
-	protected int[] hours = new int[7];
-	
 
 	public Employee(String firstName, String lastName, String username, String password, String department,
 					double payRate, double taxRate, int ptoDays) {
@@ -70,16 +68,6 @@ public abstract class Employee {
 		return String.format("%04d", employeeID);
 	}
 	
-	public void setHours(int day, int hours) {
-		if((day >= 0 && day < 7)&&(hours >=0 && hours <=24)) {
-			this.hours[day] = hours;
-		}
-	}
-	
-	public int[] getHours() {
-		return hours;
-	}
-	
 	public String getFullName() {
 		return firstName + " " + lastName + "(Username : " + username + ")";
 	}
@@ -94,6 +82,6 @@ public abstract class Employee {
 		    .comparing(Employee::getDepartment, String.CASE_INSENSITIVE_ORDER)
 		    .thenComparing(e -> (e instanceof Manager) ? 0 : 1)
 		    .thenComparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
-		    .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
-		    .thenComparing(Employee::getEmployeeID);
+			.thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
+			.thenComparing(Employee::getEmployeeID);
 }

@@ -4,9 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class DataHandler {
 	protected List<Manager> managers = new ArrayList<>();
@@ -148,5 +146,36 @@ public class DataHandler {
 	    s.setHashedPassword(hashPassword(s.getPassword()));
 	    staff.add(s);
 	    return true;
+	}
+
+	public List<Employee> getAllEmps(){
+		List<Employee> allEmps = new ArrayList<>();
+        allEmps.addAll(managers);
+		allEmps.addAll(staff);
+
+		return allEmps;
+	}
+
+	public List <Employee> getEmployeesByDepartment(){
+		List<Employee> empsByDep = getAllEmps();
+		Collections.sort(empsByDep, new Comparator<Employee>(){
+			@Override
+			public int compare(Employee e1, Employee e2) {
+				int cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
+				if (cmp != 0) {
+					return cmp;
+				}
+				cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
+				if (cmp != 0) {
+					return cmp;
+				}
+				cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
+				if (cmp != 0) {
+					return cmp;
+				}
+				return e1.getEmployeeID().compareTo(e2.getEmployeeID());
+			}
+		});
+		return empsByDep;
 	}
 }

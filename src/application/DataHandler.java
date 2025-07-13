@@ -46,7 +46,7 @@ public class DataHandler {
 	}
 
 
-	//LOAD txt file for employee
+//LOAD txt file for employee
 	private void loadFile(String filePath) {
 		try (Scanner scanner = new Scanner(new File(filePath))) {
 			String section = "";
@@ -89,7 +89,7 @@ public class DataHandler {
 		}
 	}
 
-//STORAGE OF EMPLOYEES
+//SAVE EMPLOYEES TO TXT FILE
 	public void saveToFile(String filePath) {
 		try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
 			writer.println("managers:");
@@ -124,28 +124,13 @@ public class DataHandler {
 		}
 	}
 
-//HELPERS
+//GETTERS
 	public List<Manager> getManagers() {// used to easily return list of managers, just need enhance for loop to print 
 		return managers;
 	}
 
 	public List<Staff> getStaff() {// used to easily return list of staff, just need enhance for loop to print.
 		return staff;
-	}
-
-
-	public boolean addManager(Manager m) {  // adds new manager to txt file but with a hashed password.
-	    if (usernameExists(m.getUsername())) return false;
-	    m.setHashedPassword(hashPassword(m.getPassword()));
-	    managers.add(m);
-	    return true;
-	}
-
-	public boolean addStaff(Staff s) { // adds a new staff to txt file but with a hashed password.
-	    if (usernameExists(s.getUsername())) return false;
-	    s.setHashedPassword(hashPassword(s.getPassword()));
-	    staff.add(s);
-	    return true;
 	}
 
 	public List<Employee> getAllEmps(){
@@ -156,26 +141,9 @@ public class DataHandler {
 		return allEmps;
 	}
 
-	public List <Employee> getEmployeesByDepartment(){
-		List<Employee> empsByDep = getAllEmps();
-		Collections.sort(empsByDep, new Comparator<Employee>(){
-			@Override
-			public int compare(Employee e1, Employee e2) {
-				int cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
-				if (cmp != 0) {
-					return cmp;
-				}
-				cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
-				if (cmp != 0) {
-					return cmp;
-				}
-				cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
-				if (cmp != 0) {
-					return cmp;
-				}
-				return e1.getEmployeeID().compareTo(e2.getEmployeeID());
-			}
-		});
-		return empsByDep;
+	public List<Employee> getEmployeesByDepartment() {
+	    List<Employee> emps = getAllEmps();
+	    emps.sort(Employee.BY_DEPARTMENT);
+	    return emps;
 	}
 }

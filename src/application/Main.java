@@ -39,10 +39,9 @@ public class Main extends Application {
 	protected Button btnAddEmployee = new Button("Add Employee");
 	protected Label lblAddEmpMessage = new Label();
 	protected Button btnShowEmps = new Button("Show Employees");
-	protected Button btnShowEmpsByDep = new Button("Show Employees By Department");
+	protected Button btnSearchByDept = new Button("Search");
 	protected Button btnShowManags = new Button("Show Managers");
 	protected ListView<String> listEmps = new ListView<>();
-	protected ListView<String> listEmpsByDep = new ListView<>();
 	protected ListView<String> listManags = new ListView<>();
 	protected TextField txtFFirstName = new TextField();
 	protected TextField txtFLastName = new TextField();
@@ -227,14 +226,36 @@ public class Main extends Application {
 		gp.add(lblAddEmpMessage, 1, 10);
 
 
-		VBox vboxEmps = new VBox(10, new Label("Employees:"), btnShowEmps, btnShowEmpsByDep, listEmps);
+		Label lblSearchByDept = new Label("Search by Department:");
+		ToggleGroup deptGroup = new ToggleGroup();
+		RadioButton rbSales = new RadioButton("Sales");
+		RadioButton rbHR = new RadioButton("HR");
+		RadioButton rbIT = new RadioButton("IT");
+		RadioButton rbFinance = new RadioButton("Finance");
+		RadioButton rbMarketing = new RadioButton("Marketing");
+
+		rbSales.setToggleGroup(deptGroup);
+		rbHR.setToggleGroup(deptGroup);
+		rbIT.setToggleGroup(deptGroup);
+		rbFinance.setToggleGroup(deptGroup);
+		rbMarketing.setToggleGroup(deptGroup);
+
+
+		VBox vboxDept = new VBox(5, lblSearchByDept, rbSales, rbHR, rbIT, rbFinance, rbMarketing, btnSearchByDept);
+		vboxDept.setPadding(new Insets(10));
+
+
+		HBox hboxTop = new HBox(30, btnShowEmps, btnShowManags, vboxDept);
+
+
+		VBox vboxEmps = new VBox(10, new Label("Employees:"), hboxTop, listEmps);
 		vboxEmps.setPadding(new Insets(10));
 		vboxEmps.setPrefWidth(500);
-
 
 		VBox vboxManag = new VBox(10, new Label("Managers:"), btnShowManags, listManags);
 		vboxManag.setPadding(new Insets(10));
 		vboxManag.setPrefWidth(500);
+
 
 
 		btnAddEmployee.setOnAction(event -> {
@@ -301,12 +322,20 @@ public class Main extends Application {
 			}
 		});
 
-		btnShowEmpsByDep.setOnAction(actionEvent -> {
+		btnSearchByDept.setOnAction(e -> {
 			listEmps.getItems().clear();
-			for (Employee emp : handler.getEmployeesByDepartment()) {
-				listEmps.getItems().add(formatEmployeeByDep(emp));
+			Toggle selectedToggle = deptGroup.getSelectedToggle();
+			if (selectedToggle != null) {
+				RadioButton selectedRadio = (RadioButton) selectedToggle;
+				String department = selectedRadio.getText();
+				for (Employee emp : handler.getEmployeesInDepartment(department)) {
+					listEmps.getItems().add(formatEmployeeDisplay(emp));
+				}
+			} else {
+				listEmps.getItems().add("Please select a department.");
 			}
 		});
+
 
 		btnShowManags.setOnAction(e -> {
 			listManags.getItems().clear();
@@ -324,7 +353,6 @@ public class Main extends Application {
 				listManags.getItems().add(formatEmployeeDisplay(m));
 			}
 		});
-
 
 		return new HBox(20, gp, vboxEmps, vboxManag);
 
@@ -352,7 +380,7 @@ public class Main extends Application {
 
 			CheckBox chkPTO = new CheckBox("PTO");
 			PTOPerDay[i] = chkPTO;
-			// PTO only allowed Mon-Fri
+
 			if (i >= 5)
 				chkPTO.setDisable(true);
 			daysGrid.add(chkPTO, 2, i);
@@ -389,7 +417,6 @@ public class Main extends Application {
 	}
 
 //	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
-
 	private String formatEmployeeDisplay(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("ID: ").append(emp.getEmployeeID());
@@ -426,7 +453,15 @@ public class Main extends Application {
 		List<Employee> allEmployees = new ArrayList<>();
 		allEmployees.addAll(handler.getManagers());
 		allEmployees.addAll(handler.getStaff());
-		allEmployees.sort(Employee.DEFAULT_COMPARATOR); 
+		allEmployees.sort((e1, e2) -> {
+			int cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
+			if (cmp != 0) return cmp;
+			cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
+			if (cmp != 0) return cmp;
+			cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
+			if (cmp != 0) return cmp;
+			return e1.getEmployeeID().compareTo(e2.getEmployeeID());
+		});
 		return allEmployees;
 	}
 

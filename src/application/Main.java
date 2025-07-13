@@ -362,7 +362,13 @@ public class Main extends Application {
 		vbox.getChildren().add(btnSubmitHours);
 		vbox.getChildren().add(txaHoursMessage);
 
-//		btnSubmitHours.setOnAction(new SubmitHoursHandler());
+		EmpSelected.getItems().clear();
+		for (Manager m : handler.getManagers()) {
+			EmpSelected.getItems().add(m.getFullName());
+		}
+		for (Staff s : handler.getStaff()) {
+			EmpSelected.getItems().add(s.getFullName());
+		}
 
 		return vbox;
 	}

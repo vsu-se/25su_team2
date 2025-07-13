@@ -133,21 +133,6 @@ public class DataHandler {
 		return staff;
 	}
 
-
-	public boolean addManager(Manager m) {  // adds new manager to txt file but with a hashed password.
-	    if (usernameExists(m.getUsername())) return false;
-	    m.setHashedPassword(hashPassword(m.getPassword()));
-	    managers.add(m);
-	    return true;
-	}
-
-	public boolean addStaff(Staff s) { // adds a new staff to txt file but with a hashed password.
-	    if (usernameExists(s.getUsername())) return false;
-	    s.setHashedPassword(hashPassword(s.getPassword()));
-	    staff.add(s);
-	    return true;
-	}
-
 	public List<Employee> getAllEmps(){
 		List<Employee> allEmps = new ArrayList<>();
         allEmps.addAll(managers);

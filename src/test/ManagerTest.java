@@ -75,16 +75,16 @@ class ManagerTest {
         assertEquals("User is not a manager", ex.getMessage());
     }
     
-	@Test
-	@DisplayName("Total Hours Test:")
-	void getTotalHoursTest_case1() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	@DisplayName("Set Hours Test")
-	void setHoursTest_case1() {
-		fail("Not yet implemented");
-	}
+	/*
+	 * @Test
+	 * 
+	 * @DisplayName("Total Hours Test:") void getTotalHoursTest_case1() {
+	 * fail("Not yet implemented"); }
+	 * 
+	 * @Test
+	 * 
+	 * @DisplayName("Set Hours Test") void setHoursTest_case1() {
+	 * fail("Not yet implemented"); }
+	 */
 
 }

@@ -8,12 +8,12 @@ import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 
 public class Main extends Application {
 	private DataHandler handler = new DataHandler("employees.txt");
+	private Map<String, Week> currentWeekMap = new HashMap<>();
 	private WeekRepository weekRepo = new WeekRepository();
 	private Employee loggedInUser = null;
 	private Tab tabEmployeeMgmt;
@@ -62,6 +62,8 @@ public class Main extends Application {
 	protected TextField[] txtHoursPerDay = new TextField[7];
 	protected CheckBox[] PTOPerDay = new CheckBox[7];
 	protected Button btnSubmitHours = new Button("Submit Hours");
+	protected Button btnViewCurrentWeek = new Button("View Current Week");
+	protected Button btnViewArchiveWeek = new Button("Archive Week");
 	protected TextArea txaHoursMessage = new TextArea();
 
 	// Tab 4: Payroll Reports, both Employee and Manager
@@ -391,7 +393,9 @@ public class Main extends Application {
 		}
 
 		vbox.getChildren().add(daysGrid);
-		vbox.getChildren().add(btnSubmitHours);
+		HBox buttonRow = new HBox(10); 
+		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek);
+		vbox.getChildren().add(buttonRow);
 		vbox.getChildren().add(txaHoursMessage);
 
 		// Populate employee ComboBox
@@ -403,7 +407,7 @@ public class Main extends Application {
 			EmpSelected.getItems().add(s.getUsername());
 		}
 
-		// Submit hours action
+		// SubmitHours Button - used to store current week hours in a hash map. 
 		btnSubmitHours.setOnAction(e -> {
 			String selectedUsername = EmpSelected.getValue();
 			if (selectedUsername == null) {
@@ -411,32 +415,25 @@ public class Main extends Application {
 				return;
 			}
 
-			Employee emp = null;
-			for (Manager m : handler.getManagers()) {
-				if (m.getUsername().equalsIgnoreCase(selectedUsername)) {
-					emp = m;
-					break;
-				}
-			}
-			if (emp == null) {
-				for (Staff s : handler.getStaff()) {
-					if (s.getUsername().equalsIgnoreCase(selectedUsername)) {
-						emp = s;
-						break;
-					}
-				}
-			}
-
+			Employee emp = handler.findEmployeeByUsername(selectedUsername);
 			if (emp == null) {
 				txaHoursMessage.setText("Employee not found.");
 				return;
 			}
 
-			int[] hours = new int[7];
-			boolean[] pto = new boolean[7];
-
-			try {
-				//fill the array with valid hours and PTO day
+			try {			
+				//add current week to currentWeekMap (EmployeeID:Week obj) if key has no value construct the week obj
+				String empID = emp.getEmployeeID();
+				Week week = currentWeekMap.get(emp.getEmployeeID());
+				if (week == null) {
+				    int nextWeekNum = weekRepo.getRecordsForEmployee(empID).size() + 1;
+				    week = new Week(empID, nextWeekNum, new int[7], new boolean[7]);
+				}
+				
+				//fill the array within week obj with valid hours and PTO booleans
+				int[] hours = new int[7];
+				boolean[] pto = new boolean[7];
+				
 				for (int i = 0; i < 7; i++) {
 					String input = txtHoursPerDay[i].getText().trim();
 					hours[i] = input.isEmpty() ? 0 : Integer.parseInt(input);
@@ -445,27 +442,73 @@ public class Main extends Application {
 					}
 					pto[i] = PTOPerDay[i].isSelected();
 				}
-				
-				//calculate week, construct the week obj, and then store in weekRepo
-				int nextWeekNum = weekRepo.getRecordsForEmployee(emp.getEmployeeID()).size() + 1;
-				Week week = new Week(emp.getEmployeeID(), nextWeekNum, hours, pto);
-				weekRepo.addRecord(week);
+				//add the values into the week obj and store in the HashMap
+				week.setHours(hours);
+				week.setIsPTO(pto);
+				currentWeekMap.put(empID, week);
 				
 				//validate success for user
-				txaHoursMessage.setText("Hours for Week " + nextWeekNum + " recorded for " + emp.getFullName());
+				txaHoursMessage.setText("Hours recorded for " + emp.getFullName());
 				txaHoursMessage.setStyle("-fx-text-fill: green;");
-				
-				//clear week obj; ready for next week input
-				for (int i = 0; i < 7; i++) {
-					txtHoursPerDay[i].clear();
-					PTOPerDay[i].setSelected(false);
-				}
 			
 		
 			} catch (NumberFormatException ex) {
 				txaHoursMessage.setText("Invalid input: " + ex.getMessage());
 				txaHoursMessage.setStyle("-fx-text-fill: red;");
 			}
+			
+			
+		});
+		
+		//Current Week Button - view current week for employee
+		btnViewCurrentWeek.setOnAction(e -> {
+		    String selectedUsername = EmpSelected.getValue();
+		    if (selectedUsername == null) {
+		        txaHoursMessage.setText("Please select an employee.");
+		        return;
+		    }
+
+		    Employee emp = handler.findEmployeeByUsername(selectedUsername);
+		    if (emp == null) {
+		        txaHoursMessage.setText("Employee not found.");
+		        return;
+		    }
+		    //use hashMap (EmployeeID:week) to show the week;
+		    Week week = currentWeekMap.get(emp.getEmployeeID());
+		    if (week == null) {
+		        txaHoursMessage.setText("No current week in progress.");
+		    } else {
+		        displayCurrentWeek(emp, week);
+		    }
+		});
+		
+		//Archive Button - store to hours.txt via WeekReposoitory class
+		btnViewArchiveWeek.setOnAction(e -> {
+		    String selectedUsername = EmpSelected.getValue();
+		    if (selectedUsername == null) {
+		        txaHoursMessage.setText("Please select an employee.");
+		        return;
+		    }
+
+		    Employee emp = handler.findEmployeeByUsername(selectedUsername);
+		    if (emp == null) {
+		        txaHoursMessage.setText("Employee not found.");
+		        return;
+		    }
+
+		    String empID = emp.getEmployeeID();
+		    Week week = currentWeekMap.get(empID);
+
+		    if (week == null) {
+		        txaHoursMessage.setText("No current week to archive.");
+		        return;
+		    }
+
+		    weekRepo.addRecord(week);
+		    currentWeekMap.remove(empID);
+
+		    txaHoursMessage.setText("Week archived for " + emp.getFullName() + " (Week #" + week.getWeekNumber() + ")");
+		    txaHoursMessage.setStyle("-fx-text-fill: blue;");
 		});
 
 		return vbox;
@@ -488,6 +531,24 @@ public class Main extends Application {
 	}
 
 //	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
+	private void displayCurrentWeek(Employee emp, Week week) {
+	    String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+	    StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");
+	    
+	    int totalHours = 0;
+
+	    for (int i = 0; i < 7; i++) {
+	        int hrs = week.getHours()[i];
+	        boolean isPTO = week.getIsPTO()[i];
+	        totalHours += hrs;
+	        sb.append(String.format("%s: %d hrs %s\n", days[i], hrs, isPTO ? "(PTO)" : ""));
+	    }
+
+	    sb.append("\nTotal Hours: ").append(totalHours);
+
+	    txaHoursMessage.setText(sb.toString());
+	}
+	
 	private String formatEmployeeDisplay(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("ID: ").append(emp.getEmployeeID());

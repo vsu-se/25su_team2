@@ -1,5 +1,7 @@
 package application;
 
+import java.util.Comparator;
+
 public abstract class Employee {
 	protected static int counterID = 1;
 	protected String firstName, lastName, username, password, department;
@@ -81,5 +83,11 @@ public abstract class Employee {
 	public String getFullName() {
 		return firstName + " " + lastName + "(Username : " + username + ")";
 	}
+	
+	public static final Comparator<Employee> DEFAULT_COMPARATOR =
+		    Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
+		              .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
+		              .thenComparing(Employee::getDepartment, String.CASE_INSENSITIVE_ORDER)
+		              .thenComparing(Employee::getEmployeeID);
 
 }

@@ -420,15 +420,7 @@ public class Main extends Application {
 		List<Employee> allEmployees = new ArrayList<>();
 		allEmployees.addAll(handler.getManagers());
 		allEmployees.addAll(handler.getStaff());
-		allEmployees.sort((e1, e2) -> {
-			int cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
-			if (cmp != 0) return cmp;
-			cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
-			if (cmp != 0) return cmp;
-			cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
-			if (cmp != 0) return cmp;
-			return e1.getEmployeeID().compareTo(e2.getEmployeeID());
-		});
+		allEmployees.sort(Employee.DEFAULT_COMPARATOR); 
 		return allEmployees;
 	}
 

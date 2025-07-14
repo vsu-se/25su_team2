@@ -632,7 +632,7 @@ public class Main extends Application {
 		}
 		return sb.toString();
 	}
-
+//
 	private String formatEmployeeHours(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());

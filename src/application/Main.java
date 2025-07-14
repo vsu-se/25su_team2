@@ -1,13 +1,14 @@
 package application;
 
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import java.util.*;
-
 
 public class Main extends Application {
 	private DataHandler handler = new DataHandler("employees.txt");
@@ -17,7 +18,6 @@ public class Main extends Application {
 	private Tab tabEmployeeMgmt;
 	private Tab tabHoursEntry;
 	private Tab tabPayrollReports;
-
 
 	// public static Manager empManager = new Manager(employee);
 
@@ -34,7 +34,7 @@ public class Main extends Application {
 
 	// Tab 2: Employee Management
 	// -------------------------------------------------------------------------------------
-	protected Label lblWelcomeMng= new Label();
+	protected Label lblWelcomeMng = new Label();
 	protected Button btnAddEmployee = new Button("Add Employee");
 	protected Label lblAddEmpMessage = new Label();
 	protected Button btnShowEmps = new Button("Show Employees");
@@ -51,7 +51,8 @@ public class Main extends Application {
 	protected TextField txtFTaxRate = new TextField();
 	protected TextField txtFPTO = new TextField();
 	protected ComboBox<String> cmbRole = new ComboBox<>();
-
+	protected TextArea txaEmpMessage = new TextArea();
+	protected TextArea txaManagsMessage = new TextArea();
 
 	// Tab 3: Hours Entry, both Employee and Manager
 	// -------------------------------------------------------------------
@@ -65,8 +66,6 @@ public class Main extends Application {
 	protected Label lblAllEmployees = new Label("All Employees in Hours in Current Week");
 	protected Button btnDisplayAllCurrentWeek = new Button("Display");
 	protected TextArea txaAllEmployeesCurrentWeek = new TextArea();
-
-
 	// Tab 4: Payroll Reports, both Employee and Manager
 	// -------------------------------------------------------------
 	protected ComboBox<String> cmbReportEmployee = new ComboBox<>();
@@ -148,8 +147,7 @@ public class Main extends Application {
 
 						found = true;
 						break;
-					}
-					else {
+					} else {
 						lblLoginMessage.setText("Incorrect password.");
 						lblLoginMessage.setStyle("-fx-text-fill: red;");
 						tabEmployeeMgmt.setDisable(true);
@@ -174,8 +172,7 @@ public class Main extends Application {
 
 							found = true;
 							break;
-						}
-						else {
+						} else {
 							lblLoginMessage.setText(" Incorrect password.");
 							lblLoginMessage.setStyle("-fx-text-fill: red;");
 							tabEmployeeMgmt.setDisable(true);
@@ -229,7 +226,6 @@ public class Main extends Application {
 		gp.add(btnAddEmployee, 1, 9);
 		gp.add(lblAddEmpMessage, 1, 10);
 
-
 		Label lblSearchByDept = new Label("Search by Department:");
 		ToggleGroup deptGroup = new ToggleGroup();
 		RadioButton rbSales = new RadioButton("Sales");
@@ -244,13 +240,10 @@ public class Main extends Application {
 		rbFinance.setToggleGroup(deptGroup);
 		rbMarketing.setToggleGroup(deptGroup);
 
-
 		VBox vboxDept = new VBox(5, lblSearchByDept, rbSales, rbHR, rbIT, rbFinance, rbMarketing, btnSearchByDept);
 		vboxDept.setPadding(new Insets(10));
 
-
 		HBox hboxTop = new HBox(30, btnShowEmps, btnShowManags, vboxDept);
-
 
 		VBox vboxEmps = new VBox(10, new Label("Employees:"), hboxTop, listEmps);
 		vboxEmps.setPadding(new Insets(10));
@@ -259,7 +252,6 @@ public class Main extends Application {
 		VBox vboxManag = new VBox(10, new Label("Managers:"), btnShowManags, listManags);
 		vboxManag.setPadding(new Insets(10));
 		vboxManag.setPrefWidth(500);
-
 
 		btnAddEmployee.setOnAction(event -> {
 			if (loggedInUser == null || !(loggedInUser instanceof Manager)) {
@@ -280,7 +272,8 @@ public class Main extends Application {
 
 				Employee newEmp;
 				if ("Manager".equalsIgnoreCase(role)) {
-					newEmp = new Manager(firstName, lastName, username, password, department, payRate, taxRate, ptoDays);
+					newEmp = new Manager(firstName, lastName, username, password, department, payRate, taxRate,
+							ptoDays);
 				} else {
 					newEmp = new Staff(firstName, lastName, username, password, department, payRate, taxRate, ptoDays);
 				}
@@ -288,7 +281,7 @@ public class Main extends Application {
 				boolean added = handler.addEmployee(newEmp);
 
 				if (added) {
-					//Updates both mangers and staff employees
+					// Updates both mangers and staff employees
 					listEmps.getItems().clear();
 					for (Manager m : handler.getManagers()) {
 						listEmps.getItems().add(m.getFullName() + " (Manager)");
@@ -307,8 +300,7 @@ public class Main extends Application {
 
 					lblAddEmpMessage.setText("Employee added: " + newEmp.getFullName() + " (" + role + ")");
 					lblAddEmpMessage.setStyle("-fx-text-fill: green;");
-				}
-				else {
+				} else {
 					lblAddEmpMessage.setText("Username already exists. Choose another one.");
 					lblAddEmpMessage.setStyle("-fx-text-fill: red;");
 				}
@@ -339,43 +331,19 @@ public class Main extends Application {
 			}
 		});
 
-		btnDisplayAllCurrentWeek.setOnAction(e -> {
-			List<Employee> allEmployees = getSortedEmployees();
-			StringBuilder sb = new StringBuilder();
-			String[] daysArr = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-
-			for (Employee emp : allEmployees) {
-				sb.append(formatEmployeeHours(emp)).append("\n\n");
-				Week week = currentWeekMap.get(emp.getEmployeeID());
-				if (week == null) {
-					sb.append("  No current week data.\n\n");
-					continue;
-				}
-				int[] hours = week.getHours();
-				boolean[] pto = week.getIsPTO();
-				int totalHours = 0;
-				for (int i = 0; i < 7; i++) {
-					sb.append("  ").append(daysArr[i]).append(": ").append(hours[i]);
-					if (pto[i]) sb.append(" (PTO)");
-					sb.append("\n");
-					totalHours += hours[i];
-				}
-				sb.append("  Total Hours: ").append(totalHours).append("\n\n");
-			}
-			txaAllEmployeesCurrentWeek.setText(sb.toString());
-		});
-
-
 		btnShowManags.setOnAction(e -> {
 			listManags.getItems().clear();
 			List<Manager> sortedManagers = new ArrayList<>(handler.getManagers());
 			sortedManagers.sort((m1, m2) -> {
 				int cmp = m1.getLastName().compareToIgnoreCase(m2.getLastName());
-				if (cmp != 0) return cmp;
+				if (cmp != 0)
+					return cmp;
 				cmp = m1.getFirstName().compareToIgnoreCase(m2.getFirstName());
-				if (cmp != 0) return cmp;
+				if (cmp != 0)
+					return cmp;
 				cmp = m1.getDepartment().compareToIgnoreCase(m2.getDepartment());
-				if (cmp != 0) return cmp;
+				if (cmp != 0)
+					return cmp;
 				return m1.getEmployeeID().compareTo(m2.getEmployeeID());
 			});
 			for (Manager m : sortedManagers) {
@@ -432,11 +400,9 @@ public class Main extends Application {
 		vboxAll.setPadding(new Insets(0, 0, 0, 10));
 		vboxAll.getChildren().addAll(lblAllEmployees, btnDisplayAllCurrentWeek, txaAllEmployeesCurrentWeek);
 
-
 		HBox hbox = new HBox(10);
 		hbox.setPadding(new Insets(10));
 		hbox.getChildren().addAll(vbox, vboxAll);
-
 
 		// Populate employee ComboBox
 		EmpSelected.getItems().clear();
@@ -447,7 +413,7 @@ public class Main extends Application {
 			EmpSelected.getItems().add(s.getUsername());
 		}
 
-		// SubmitHours Button - used to store current week hours in a hash map. 
+		// SubmitHours Button - used to store current week hours in a hash map.
 		btnSubmitHours.setOnAction(e -> {
 			String selectedUsername = EmpSelected.getValue();
 			if (selectedUsername == null) {
@@ -462,7 +428,8 @@ public class Main extends Application {
 			}
 
 			try {
-				//add current week to currentWeekMap (EmployeeID:Week obj) if key has no value construct the week obj
+				// add current week to currentWeekMap (EmployeeID:Week obj) if key has no value
+				// construct the week obj
 				String empID = emp.getEmployeeID();
 				Week week = currentWeekMap.get(emp.getEmployeeID());
 				if (week == null) {
@@ -470,7 +437,7 @@ public class Main extends Application {
 					week = new Week(empID, nextWeekNum, new int[7], new boolean[7]);
 				}
 
-				//fill the array within week obj with valid hours and PTO booleans
+				// fill the array within week obj with valid hours and PTO booleans
 				int[] hours = new int[7];
 				boolean[] pto = new boolean[7];
 
@@ -482,25 +449,23 @@ public class Main extends Application {
 					}
 					pto[i] = PTOPerDay[i].isSelected();
 				}
-				//add the values into the week obj and store in the HashMap
+				// add the values into the week obj and store in the HashMap
 				week.setHours(hours);
 				week.setIsPTO(pto);
 				currentWeekMap.put(empID, week);
 
-				//validate success for user
+				// validate success for user
 				txaHoursMessage.setText("Hours recorded for " + emp.getFullName());
 				txaHoursMessage.setStyle("-fx-text-fill: green;");
-
 
 			} catch (NumberFormatException ex) {
 				txaHoursMessage.setText("Invalid input: " + ex.getMessage());
 				txaHoursMessage.setStyle("-fx-text-fill: red;");
 			}
 
-
 		});
 
-		//Current Week Button - view current week for employee
+		// Current Week Button - view current week for employee
 		btnViewCurrentWeek.setOnAction(e -> {
 			String selectedUsername = EmpSelected.getValue();
 			if (selectedUsername == null) {
@@ -513,7 +478,7 @@ public class Main extends Application {
 				txaHoursMessage.setText("Employee not found.");
 				return;
 			}
-			//use hashMap (EmployeeID:week) to show the week;
+			// use hashMap (EmployeeID:week) to show the week;
 			Week week = currentWeekMap.get(emp.getEmployeeID());
 			if (week == null) {
 				txaHoursMessage.setText("No current week in progress.");
@@ -522,7 +487,7 @@ public class Main extends Application {
 			}
 		});
 
-		//Archive Button - store to hours.txt via WeekReposoitory class
+		// Archive Button - store to hours.txt via WeekReposoitory class
 		btnViewArchiveWeek.setOnAction(e -> {
 			String selectedUsername = EmpSelected.getValue();
 			if (selectedUsername == null) {
@@ -554,7 +519,7 @@ public class Main extends Application {
 		btnDisplayAllCurrentWeek.setOnAction(e -> {
 			List<Employee> allEmployees = getSortedEmployees();
 			StringBuilder sb = new StringBuilder();
-			String[] daysArr = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+			String[] daysArr = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 
 			for (Employee emp : allEmployees) {
 				sb.append(formatEmployeeHours(emp)).append("\n\n");
@@ -568,7 +533,8 @@ public class Main extends Application {
 				int totalHours = 0;
 				for (int i = 0; i < 7; i++) {
 					sb.append("  ").append(daysArr[i]).append(": ").append(hours[i]);
-					if (pto[i]) sb.append(" (PTO)");
+					if (pto[i])
+						sb.append(" (PTO)");
 					sb.append("\n");
 					totalHours += hours[i];
 				}
@@ -579,7 +545,6 @@ public class Main extends Application {
 
 		return hbox;
 	}
-
 
 	// ----- Payroll Reports Tab ----------------------------------
 	private Pane buildPayrollReportsTab() {
@@ -598,23 +563,37 @@ public class Main extends Application {
 
 //	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
 	private void displayCurrentWeek(Employee emp, Week week) {
-	    String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-	    StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");
-	    
-	    int totalHours = 0;
+		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+		StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");
 
-	    for (int i = 0; i < 7; i++) {
-	        int hrs = week.getHours()[i];
-	        boolean isPTO = week.getIsPTO()[i];
-	        totalHours += hrs;
-	        sb.append(String.format("%s: %d hrs %s\n", days[i], hrs, isPTO ? "(PTO)" : ""));
-	    }
+		int totalHours = 0;
 
-	    sb.append("\nTotal Hours: ").append(totalHours);
+		for (int i = 0; i < 7; i++) {
+			int hrs = week.getHours()[i];
+			boolean isPTO = week.getIsPTO()[i];
+			totalHours += hrs;
+			sb.append(String.format("%s: %d hrs %s\n", days[i], hrs, isPTO ? "(PTO)" : ""));
+		}
 
-	    txaHoursMessage.setText(sb.toString());
+		sb.append("\nTotal Hours: ").append(totalHours);
+
+		txaHoursMessage.setText(sb.toString());
 	}
 	
+	private String formatEmployeeHours(Employee emp) {
+	    StringBuilder sb = new StringBuilder();
+	    sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
+	    sb.append("| Department: ").append(emp.getDepartment());
+	    sb.append("| ID: ").append(emp.getEmployeeID());
+	    if (emp instanceof Manager) {
+	       sb.insert(0, ("MANAGER | "));
+	    }
+	    else{
+	       sb.insert(0,("STAFF | "));
+	    }
+	    return sb.toString();
+	}
+
 	private String formatEmployeeDisplay(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("ID: ").append(emp.getEmployeeID());
@@ -626,23 +605,21 @@ public class Main extends Application {
 		sb.append(" | PTO: ").append(emp.getPtoDays()).append(" days");
 		if (emp instanceof Manager) {
 			sb.insert(0, ("MANAGER | "));
-		}
-		else{
-			sb.insert(0,("STAFF | "));
+		} else {
+			sb.insert(0, ("STAFF | "));
 		}
 		return sb.toString();
 	}
-//
-	private String formatEmployeeHours(Employee emp) {
+
+	private String formatEmployeeByDep(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
-		sb.append("| Department: ").append(emp.getDepartment());
 		sb.append("| ID: ").append(emp.getEmployeeID());
+		sb.append("| Department: ").append(emp.getDepartment());
 		if (emp instanceof Manager) {
 			sb.insert(0, ("MANAGER | "));
-		}
-		else{
-			sb.insert(0,("STAFF | "));
+		} else {
+			sb.insert(0, ("STAFF | "));
 		}
 		return sb.toString();
 	}
@@ -653,17 +630,18 @@ public class Main extends Application {
 		allEmployees.addAll(handler.getStaff());
 		allEmployees.sort((e1, e2) -> {
 			int cmp = e1.getLastName().compareToIgnoreCase(e2.getLastName());
-			if (cmp != 0) return cmp;
+			if (cmp != 0)
+				return cmp;
 			cmp = e1.getFirstName().compareToIgnoreCase(e2.getFirstName());
-			if (cmp != 0) return cmp;
+			if (cmp != 0)
+				return cmp;
 			cmp = e1.getDepartment().compareToIgnoreCase(e2.getDepartment());
-			if (cmp != 0) return cmp;
+			if (cmp != 0)
+				return cmp;
 			return e1.getEmployeeID().compareTo(e2.getEmployeeID());
 		});
 		return allEmployees;
 	}
-
-
 
 	public static void main(String[] args) {
 		System.out.println("");

@@ -1,8 +1,6 @@
 package application;
 
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
@@ -53,8 +51,7 @@ public class Main extends Application {
 	protected TextField txtFTaxRate = new TextField();
 	protected TextField txtFPTO = new TextField();
 	protected ComboBox<String> cmbRole = new ComboBox<>();
-	protected TextArea txaEmpMessage = new TextArea();
-	protected TextArea txaManagsMessage = new TextArea();
+
 
 	// Tab 3: Hours Entry, both Employee and Manager
 	// -------------------------------------------------------------------
@@ -65,6 +62,10 @@ public class Main extends Application {
 	protected Button btnViewCurrentWeek = new Button("View Current Week");
 	protected Button btnViewArchiveWeek = new Button("Archive Week");
 	protected TextArea txaHoursMessage = new TextArea();
+	protected Label lblAllEmployees = new Label("All Employees in Hours in Current Week");
+	protected Button btnDisplayAllCurrentWeek = new Button("Display");
+	protected TextArea txaAllEmployeesCurrentWeek = new TextArea();
+
 
 	// Tab 4: Payroll Reports, both Employee and Manager
 	// -------------------------------------------------------------
@@ -260,7 +261,6 @@ public class Main extends Application {
 		vboxManag.setPrefWidth(500);
 
 
-
 		btnAddEmployee.setOnAction(event -> {
 			if (loggedInUser == null || !(loggedInUser instanceof Manager)) {
 				lblAddEmpMessage.setText("Access denied: Only managers can add employees.");
@@ -339,6 +339,32 @@ public class Main extends Application {
 			}
 		});
 
+		btnDisplayAllCurrentWeek.setOnAction(e -> {
+			List<Employee> allEmployees = getSortedEmployees();
+			StringBuilder sb = new StringBuilder();
+			String[] daysArr = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+			for (Employee emp : allEmployees) {
+				sb.append(formatEmployeeHours(emp)).append("\n\n");
+				Week week = currentWeekMap.get(emp.getEmployeeID());
+				if (week == null) {
+					sb.append("  No current week data.\n\n");
+					continue;
+				}
+				int[] hours = week.getHours();
+				boolean[] pto = week.getIsPTO();
+				int totalHours = 0;
+				for (int i = 0; i < 7; i++) {
+					sb.append("  ").append(daysArr[i]).append(": ").append(hours[i]);
+					if (pto[i]) sb.append(" (PTO)");
+					sb.append("\n");
+					totalHours += hours[i];
+				}
+				sb.append("  Total Hours: ").append(totalHours).append("\n\n");
+			}
+			txaAllEmployeesCurrentWeek.setText(sb.toString());
+		});
+
 
 		btnShowManags.setOnAction(e -> {
 			listManags.getItems().clear();
@@ -393,10 +419,24 @@ public class Main extends Application {
 		}
 
 		vbox.getChildren().add(daysGrid);
-		HBox buttonRow = new HBox(10); 
+		HBox buttonRow = new HBox(10);
 		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek);
 		vbox.getChildren().add(buttonRow);
 		vbox.getChildren().add(txaHoursMessage);
+
+		txaAllEmployeesCurrentWeek.setEditable(false);
+		txaAllEmployeesCurrentWeek.setPrefHeight(350);
+		txaAllEmployeesCurrentWeek.setPrefWidth(400);
+
+		VBox vboxAll = new VBox(10);
+		vboxAll.setPadding(new Insets(0, 0, 0, 10));
+		vboxAll.getChildren().addAll(lblAllEmployees, btnDisplayAllCurrentWeek, txaAllEmployeesCurrentWeek);
+
+
+		HBox hbox = new HBox(10);
+		hbox.setPadding(new Insets(10));
+		hbox.getChildren().addAll(vbox, vboxAll);
+
 
 		// Populate employee ComboBox
 		EmpSelected.getItems().clear();
@@ -511,7 +551,33 @@ public class Main extends Application {
 		    txaHoursMessage.setStyle("-fx-text-fill: blue;");
 		});
 
-		return vbox;
+		btnDisplayAllCurrentWeek.setOnAction(e -> {
+			List<Employee> allEmployees = getSortedEmployees();
+			StringBuilder sb = new StringBuilder();
+			String[] daysArr = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+			for (Employee emp : allEmployees) {
+				sb.append(formatEmployeeHours(emp)).append("\n\n");
+				Week week = currentWeekMap.get(emp.getEmployeeID());
+				if (week == null) {
+					sb.append("  No current week data.\n\n");
+					continue;
+				}
+				int[] hours = week.getHours();
+				boolean[] pto = week.getIsPTO();
+				int totalHours = 0;
+				for (int i = 0; i < 7; i++) {
+					sb.append("  ").append(daysArr[i]).append(": ").append(hours[i]);
+					if (pto[i]) sb.append(" (PTO)");
+					sb.append("\n");
+					totalHours += hours[i];
+				}
+				sb.append("  Total Hours: ").append(totalHours).append("\n\n");
+			}
+			txaAllEmployeesCurrentWeek.setText(sb.toString());
+		});
+
+		return hbox;
 	}
 
 
@@ -567,11 +633,11 @@ public class Main extends Application {
 		return sb.toString();
 	}
 
-	private String formatEmployeeByDep(Employee emp) {
+	private String formatEmployeeHours(Employee emp) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
-		sb.append("| ID: ").append(emp.getEmployeeID());
 		sb.append("| Department: ").append(emp.getDepartment());
+		sb.append("| ID: ").append(emp.getEmployeeID());
 		if (emp instanceof Manager) {
 			sb.insert(0, ("MANAGER | "));
 		}

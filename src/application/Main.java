@@ -461,19 +461,19 @@ public class Main extends Application {
 				return;
 			}
 
-			try {			
+			try {
 				//add current week to currentWeekMap (EmployeeID:Week obj) if key has no value construct the week obj
 				String empID = emp.getEmployeeID();
 				Week week = currentWeekMap.get(emp.getEmployeeID());
 				if (week == null) {
-				    int nextWeekNum = weekRepo.getRecordsForEmployee(empID).size() + 1;
-				    week = new Week(empID, nextWeekNum, new int[7], new boolean[7]);
+					int nextWeekNum = weekRepo.getRecordsForEmployee(empID).size() + 1;
+					week = new Week(empID, nextWeekNum, new int[7], new boolean[7]);
 				}
-				
+
 				//fill the array within week obj with valid hours and PTO booleans
 				int[] hours = new int[7];
 				boolean[] pto = new boolean[7];
-				
+
 				for (int i = 0; i < 7; i++) {
 					String input = txtHoursPerDay[i].getText().trim();
 					hours[i] = input.isEmpty() ? 0 : Integer.parseInt(input);
@@ -486,69 +486,69 @@ public class Main extends Application {
 				week.setHours(hours);
 				week.setIsPTO(pto);
 				currentWeekMap.put(empID, week);
-				
+
 				//validate success for user
 				txaHoursMessage.setText("Hours recorded for " + emp.getFullName());
 				txaHoursMessage.setStyle("-fx-text-fill: green;");
-			
-		
+
+
 			} catch (NumberFormatException ex) {
 				txaHoursMessage.setText("Invalid input: " + ex.getMessage());
 				txaHoursMessage.setStyle("-fx-text-fill: red;");
 			}
-			
-			
+
+
 		});
-		
+
 		//Current Week Button - view current week for employee
 		btnViewCurrentWeek.setOnAction(e -> {
-		    String selectedUsername = EmpSelected.getValue();
-		    if (selectedUsername == null) {
-		        txaHoursMessage.setText("Please select an employee.");
-		        return;
-		    }
+			String selectedUsername = EmpSelected.getValue();
+			if (selectedUsername == null) {
+				txaHoursMessage.setText("Please select an employee.");
+				return;
+			}
 
-		    Employee emp = handler.findEmployeeByUsername(selectedUsername);
-		    if (emp == null) {
-		        txaHoursMessage.setText("Employee not found.");
-		        return;
-		    }
-		    //use hashMap (EmployeeID:week) to show the week;
-		    Week week = currentWeekMap.get(emp.getEmployeeID());
-		    if (week == null) {
-		        txaHoursMessage.setText("No current week in progress.");
-		    } else {
-		        displayCurrentWeek(emp, week);
-		    }
+			Employee emp = handler.findEmployeeByUsername(selectedUsername);
+			if (emp == null) {
+				txaHoursMessage.setText("Employee not found.");
+				return;
+			}
+			//use hashMap (EmployeeID:week) to show the week;
+			Week week = currentWeekMap.get(emp.getEmployeeID());
+			if (week == null) {
+				txaHoursMessage.setText("No current week in progress.");
+			} else {
+				displayCurrentWeek(emp, week);
+			}
 		});
-		
+
 		//Archive Button - store to hours.txt via WeekReposoitory class
 		btnViewArchiveWeek.setOnAction(e -> {
-		    String selectedUsername = EmpSelected.getValue();
-		    if (selectedUsername == null) {
-		        txaHoursMessage.setText("Please select an employee.");
-		        return;
-		    }
+			String selectedUsername = EmpSelected.getValue();
+			if (selectedUsername == null) {
+				txaHoursMessage.setText("Please select an employee.");
+				return;
+			}
 
-		    Employee emp = handler.findEmployeeByUsername(selectedUsername);
-		    if (emp == null) {
-		        txaHoursMessage.setText("Employee not found.");
-		        return;
-		    }
+			Employee emp = handler.findEmployeeByUsername(selectedUsername);
+			if (emp == null) {
+				txaHoursMessage.setText("Employee not found.");
+				return;
+			}
 
-		    String empID = emp.getEmployeeID();
-		    Week week = currentWeekMap.get(empID);
+			String empID = emp.getEmployeeID();
+			Week week = currentWeekMap.get(empID);
 
-		    if (week == null) {
-		        txaHoursMessage.setText("No current week to archive.");
-		        return;
-		    }
+			if (week == null) {
+				txaHoursMessage.setText("No current week to archive.");
+				return;
+			}
 
-		    weekRepo.addRecord(week);
-		    currentWeekMap.remove(empID);
+			weekRepo.addRecord(week);
+			currentWeekMap.remove(empID);
 
-		    txaHoursMessage.setText("Week archived for " + emp.getFullName() + " (Week #" + week.getWeekNumber() + ")");
-		    txaHoursMessage.setStyle("-fx-text-fill: blue;");
+			txaHoursMessage.setText("Week archived for " + emp.getFullName() + " (Week #" + week.getWeekNumber() + ")");
+			txaHoursMessage.setStyle("-fx-text-fill: blue;");
 		});
 
 		btnDisplayAllCurrentWeek.setOnAction(e -> {

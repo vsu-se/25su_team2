@@ -1,0 +1,1 @@
+ManagerID:0005 | EmployeeID:bjones | Day:1 | OldHours:8 | NewHours:5 | OldPTO:false | NewPTO:true

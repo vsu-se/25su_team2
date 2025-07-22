@@ -1,5 +1,13 @@
 package application;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import javax.naming.AuthenticationException;
+
 public class Manager extends Employee {
 
 	public Manager(String firstName, String lastName, String username, String password, String department,
@@ -31,4 +39,37 @@ public class Manager extends Employee {
 			// 5. Success!
 			return (Manager) found;
 		}
+	
+	// Edits a daily entry for an employee only if the employee exists in the given employees file.
+	// Returns true if the edit and audit succeed, false otherwise.
+	// Manager.java
+	public boolean editDailyEntry(String employeeUsername, int dayIndex, int newHours, boolean newPTO,
+	    Map<String, Week> currentWeekMap, WeekRepository weekRepo, String hoursFilePath, String auditFilePath) {
+
+	    Week week = currentWeekMap.get(employeeUsername);
+	    if (week == null || dayIndex < 0 || dayIndex > 6) return false;
+
+	    int oldHours = week.getHours()[dayIndex];
+	    boolean oldPTO = week.getIsPTO()[dayIndex];
+
+	    week.getHours()[dayIndex] = newHours;
+	    week.getIsPTO()[dayIndex] = newPTO;
+
+	    try (PrintWriter writer = new PrintWriter(new FileWriter(hoursFilePath, true))) {
+	        writer.println(week.toFileString());
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    try (PrintWriter writer = new PrintWriter(new FileWriter(auditFilePath, true))) {
+	        writer.printf(
+	            "ManagerID:%s | EmployeeID:%s | Day:%d | OldHours:%d | NewHours:%d | OldPTO:%b | NewPTO:%b\n",
+	            this.getEmployeeID(), employeeUsername, dayIndex, oldHours, newHours, oldPTO, newPTO
+	        );
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return true;
+	}
 }	

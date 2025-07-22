@@ -11,13 +11,14 @@ import javafx.scene.layout.*;
 import java.util.*;
 
 public class Main extends Application {
-	private DataHandler handler = new DataHandler("employees.txt");
-	private Map<String, Week> currentWeekMap = new HashMap<>();
-	private WeekRepository weekRepo = new WeekRepository();
+	private final DataHandler handler = new DataHandler("employees.txt");
+	private final Map<String, Week> currentWeekMap = new HashMap<>();
+	private final WeekRepository weekRepo = new WeekRepository();
 	private Employee loggedInUser = null;
 	private Tab tabEmployeeMgmt;
 	private Tab tabHoursEntry;
 	private Tab tabPayrollReports;
+	private Tab tabEmployeeAddHours;
 
 	// public static Manager empManager = new Manager(employee);
 
@@ -72,7 +73,14 @@ public class Main extends Application {
 	protected Button btnViewReport = new Button("View Report");
 	protected TextArea txaReport = new TextArea();
 
-	// on application in the Employee class)
+	// Tab 4: Employee Hours Entry for Staff Employees
+	//------------------------------------------------------------------
+	protected Label lblEmployeeHoursHeader = new Label();
+	protected TextField[] txtEmployeeHoursPerDay = new TextField[7];
+	protected CheckBox[] ptoEmployeePerDay = new CheckBox[7];
+	protected Button btnEmployeeSubmitHours = new Button("Submit Hours");
+	protected TextArea txaEmployeeHoursMessage = new TextArea();
+
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -97,16 +105,14 @@ public class Main extends Application {
 		tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab());
 		tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab());
 		tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab());
+		tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab());
+		tabEmployeeAddHours.setClosable(false);
 
-		// Add tabs to TabPane
-		// ------------------------------------------------------------------
-		tabPane.getTabs().addAll(tabLogin, tabEmployeeMgmt, tabHoursEntry, tabPayrollReports);
 
-		// Disable tabs except for the log in tab
+		//Only login tab
 		// --------------------------------------------------
-		tabEmployeeMgmt.setDisable(true);
-		tabHoursEntry.setDisable(true);
-		tabPayrollReports.setDisable(true);
+
+		tabPane.getTabs().add(tabLogin);
 
 		brdPane.setCenter(tabPane);
 		return brdPane;
@@ -132,6 +138,8 @@ public class Main extends Application {
 
 			boolean found = false;
 
+			tabPane.getTabs().clear();
+
 			for (Manager m : handler.getManagers()) {
 				if (m.getUsername().equalsIgnoreCase(inputUsername)) {
 					if (m.authenticate(inputPassword)) {
@@ -139,9 +147,14 @@ public class Main extends Application {
 						lblLoginMessage.setStyle("-fx-text-fill: green;");
 						loggedInUser = m;
 
-						tabEmployeeMgmt.setDisable(false);
-						tabHoursEntry.setDisable(false);
-						tabPayrollReports.setDisable(false);
+						tabPane.getTabs().clear();
+
+						tabPane.getTabs().addAll(
+								new Tab("Login", buildLoginTab()),
+								tabEmployeeMgmt,
+								tabHoursEntry,
+								tabPayrollReports
+						);
 
 						tabPane.getSelectionModel().select(tabEmployeeMgmt);
 
@@ -150,9 +163,7 @@ public class Main extends Application {
 					} else {
 						lblLoginMessage.setText("Incorrect password.");
 						lblLoginMessage.setStyle("-fx-text-fill: red;");
-						tabEmployeeMgmt.setDisable(true);
-						tabHoursEntry.setDisable(true);
-						tabPayrollReports.setDisable(true);
+						tabPane.getTabs().add(new Tab("Login", buildLoginTab()));
 						return;
 					}
 				}
@@ -166,9 +177,21 @@ public class Main extends Application {
 							lblLoginMessage.setStyle("-fx-text-fill: green;");
 							loggedInUser = s;
 
-							tabEmployeeMgmt.setDisable(true);
-							tabHoursEntry.setDisable(true);
-							tabPayrollReports.setDisable(true);
+							tabPane.getTabs().clear();
+
+
+							Tab tabLogin = new Tab("Login", buildLoginTab());
+							tabLogin.setClosable(false);
+
+							Tab tabStaffHoursEntry = new Tab("Add My Hours", buildHoursEntryEmployeeTab());
+							tabStaffHoursEntry.setClosable(false);
+
+							tabPane.getTabs().addAll(
+									tabLogin,
+									tabStaffHoursEntry
+							);
+
+							tabPane.getSelectionModel().select(tabStaffHoursEntry);
 
 							found = true;
 							break;
@@ -555,13 +578,106 @@ public class Main extends Application {
 		vbox.getChildren().add(cmbReportEmployee);
 		vbox.getChildren().add(btnViewReport);
 		vbox.getChildren().add(txaReport);
+		
 
-//		btnViewReport.setOnAction(new ViewReportHandler());
+		return vbox;
+	}
+	// -----Employees Hour Entry Tab -----------------------------------------------------
+	private Pane buildHoursEntryEmployeeTab() {
+		VBox vbox = new VBox(10);
+		vbox.setPadding(new Insets(10));
+
+		if (loggedInUser != null) {
+			lblEmployeeHoursHeader.setText("Employee: " + loggedInUser.getFullNameNoUser() +
+					" | ID: " + loggedInUser.getEmployeeID());
+		}
+		else {
+			lblEmployeeHoursHeader.setText("No user logged in.");
+		}
+		lblEmployeeHoursHeader.setStyle("-fx-font-size: 14pt; -fx-font-weight: bold;");
+		vbox.getChildren().add(lblEmployeeHoursHeader);
+
+		GridPane daysGrid = new GridPane();
+		daysGrid.setHgap(10);
+		daysGrid.setVgap(10);
+
+		String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+		for (int i = 0; i < 7; i++) {
+			daysGrid.add(new Label(days[i] + ":"), 0, i);
+
+			if (txtEmployeeHoursPerDay[i] == null) {
+				txtEmployeeHoursPerDay[i] = new TextField();
+			}
+			txtEmployeeHoursPerDay[i].setPromptText("Hours");
+			daysGrid.add(txtEmployeeHoursPerDay[i], 1, i);
+
+			if (ptoEmployeePerDay[i] == null)
+				ptoEmployeePerDay[i] = new CheckBox("PTO");
+
+			//TPO click boxes
+			if (i >= 5) ptoEmployeePerDay[i].setDisable(true);
+			daysGrid.add(ptoEmployeePerDay[i], 2, i);
+		}
+		vbox.getChildren().add(daysGrid);
+		vbox.getChildren().add(btnEmployeeSubmitHours);
+
+		// Message label and button reset
+		txaEmployeeHoursMessage.setEditable(false);
+		txaEmployeeHoursMessage.setWrapText(true);
+		txaEmployeeHoursMessage.setPrefRowCount(4);
+		txaEmployeeHoursMessage.setPrefHeight(120);
+
+		vbox.getChildren().add(txaEmployeeHoursMessage);
+
+		//Submit hours for employee
+		btnEmployeeSubmitHours.setOnAction(e -> {
+			if (!(loggedInUser instanceof Staff)) {
+				txaEmployeeHoursMessage.setText("Only staff employees can use this form.");
+				txaEmployeeHoursMessage.setStyle("-fx-text-fill: red;");
+				return;
+			}
+
+			String empID = loggedInUser.getEmployeeID();
+			Week existingWeek = currentWeekMap.get(empID);
+
+			if (existingWeek != null) {
+				txaEmployeeHoursMessage.setText("You already submitted hours for this week.");
+				txaEmployeeHoursMessage.setStyle("-fx-text-fill: red;");
+				return;
+			}
+
+			try {
+				int[] hoursArray = new int[7];
+				boolean[] ptoArray = new boolean[7];
+
+				for (int i = 0; i < 7; i++) {
+					String input = txtEmployeeHoursPerDay[i].getText().trim();
+					int hours = (input.isEmpty()) ? 0 : Integer.parseInt(input);
+
+					if (hours < 0 || hours > 24)
+						throw new NumberFormatException("Invalid hours for " + days[i]);
+
+					hoursArray[i] = hours;
+					ptoArray[i] = ptoEmployeePerDay[i].isSelected();
+				}
+
+				int weekNumber = weekRepo.getRecordsForEmployee(empID).size() + 1;
+				Week newWeek = new Week(empID, weekNumber, hoursArray, ptoArray);
+				currentWeekMap.put(empID, newWeek);
+
+				txaEmployeeHoursMessage.setText("Hours submitted successfully for this week.");
+				txaEmployeeHoursMessage.setStyle("-fx-text-fill: green;");
+			} catch (NumberFormatException ex) {
+				txaEmployeeHoursMessage.setText("Error: " + ex.getMessage());
+				txaEmployeeHoursMessage.setStyle("-fx-text-fill: red;");
+			}
+		});
 
 		return vbox;
 	}
 
-//	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
+
+	//	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
 	private void displayCurrentWeek(Employee emp, Week week) {
 		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 		StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");

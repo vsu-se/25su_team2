@@ -60,7 +60,9 @@ public abstract class Employee {
 	public String getFullName() {
 		return firstName + " " + lastName + "(Username : " + username + ")";
 	}
-	
+
+	public String getFullNameNoUser(){ return firstName + " " + lastName;}
+
 	public static final Comparator<Employee> DEFAULT_COMPARATOR =
 		    Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
 		              .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)

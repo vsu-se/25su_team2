@@ -20,7 +20,6 @@ public class Main extends Application {
 	private Tab tabPayrollReports;
 	private Tab tabEmployeeAddHours;
 
-	// public static Manager empManager = new Manager(employee);
 
 	// GUI base structure
 	// --------------------------------------------------------------------------------------

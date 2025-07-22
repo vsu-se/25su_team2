@@ -153,4 +153,20 @@ public class DataHandler {
 		    emps.sort(Employee.BY_DEPARTMENT);
 		    return emps;
 	}
+	
+	public Employee findEmployeeByUsername(String username) {
+	    for (Manager m : managers) {
+	        if (m.getUsername().equalsIgnoreCase(username)) {
+	            return m;
+	        }
+	    }
+
+	    for (Staff s : staff) {
+	        if (s.getUsername().equalsIgnoreCase(username)) {
+	            return s;
+	        }
+	    }
+
+	    return null;
+	}
 }

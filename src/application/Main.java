@@ -69,8 +69,15 @@ public class Main extends Application {
 	// Tab 4: Payroll Reports, both Employee and Manager
 	// -------------------------------------------------------------
 	protected ComboBox<String> cmbReportEmployee = new ComboBox<>();
+	protected ComboBox<String> cmbReportWeek = new ComboBox<>();
 	protected Button btnViewReport = new Button("View Report");
 	protected TextArea txaReport = new TextArea();
+	protected RadioButton rbCurrent = new RadioButton("Current Week");
+	protected RadioButton rbAll = new RadioButton("All Weeks");
+	protected RadioButton rbRange = new RadioButton("Select Range");
+	protected ToggleGroup reportGroup = new ToggleGroup();
+	protected String selectedRangeStart = null;
+	protected String selectedRangeEnd = null;
 
 	// Tab 4: Employee Hours Entry for Staff Employees
 	//------------------------------------------------------------------
@@ -117,7 +124,7 @@ public class Main extends Application {
 		return brdPane;
 	}
 
-	// ----- Log in Tab --------------------------
+// ----- Log in Tab --------------------------
 	private Pane buildLoginTab() {
 		GridPane grid = new GridPane();
 		grid.setPadding(new Insets(20));
@@ -218,7 +225,7 @@ public class Main extends Application {
 		return grid;
 	}
 
-	// ----- Employee Management Tab ---------------------------
+// ----- Employee Management Tab ---------------------------
 	private Pane buildEmployeeManagementTab() {
 		GridPane gp = new GridPane();
 		gp.setPadding(new Insets(10));
@@ -377,7 +384,7 @@ public class Main extends Application {
 
 	}
 
-	// ----- Hours Entry Tab ----------------------------------------
+// ----- Hours Entry Tab ----------------------------------------
 	private Pane buildHoursEntryTab() {
 		VBox vbox = new VBox(10);
 		vbox.setPadding(new Insets(10));
@@ -568,20 +575,179 @@ public class Main extends Application {
 		return hbox;
 	}
 
-	// ----- Payroll Reports Tab ----------------------------------
+// ----- Payroll Reports Tab ----------------------------------
 	private Pane buildPayrollReportsTab() {
 		VBox vbox = new VBox(10);
 		vbox.setPadding(new Insets(10));
-
+		
+		//select employee drop down
 		vbox.getChildren().add(new Label("Select Employee:"));
 		vbox.getChildren().add(cmbReportEmployee);
+		
+		//radio buttons 
+		rbCurrent.setToggleGroup(reportGroup);
+		rbAll.setToggleGroup(reportGroup);
+		rbRange.setToggleGroup(reportGroup);
+		rbCurrent.setSelected(true);
+		HBox radioBox = new HBox(10, rbCurrent, rbAll, rbRange);
+		vbox.getChildren().add(radioBox);
+		
+		//view report button and text area
 		vbox.getChildren().add(btnViewReport);
 		vbox.getChildren().add(txaReport);
+
+		//load the current items
+		cmbReportEmployee.getItems().clear();
+		for (Manager m : handler.getManagers()) {
+		    cmbReportEmployee.getItems().add(m.getUsername());
+		}
+		for (Staff s : handler.getStaff()) {
+		    cmbReportEmployee.getItems().add(s.getUsername());
+		}
+		
+		//Radio for Week range selection-----------------------------------------------------------------------
+		rbRange.setOnMouseClicked(e -> {
+		    // Allow button to reopen pop if already selected vs having to click on and off to refresh.
+		    if (rbRange.isSelected()) {
+		        String username = cmbReportEmployee.getValue();
+		        if (username == null) {
+		            txaReport.setText("Please select an employee first.");
+		            reportGroup.selectToggle(rbCurrent);
+		            return;
+		        }
+		        
+		        //load selected employee week repo
+		        Employee emp = handler.findEmployeeByUsername(username);
+		        List<Week> weeks = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+
+		        if (weeks.isEmpty()) {
+		            txaReport.setText("No archived weeks available.");
+		            reportGroup.selectToggle(rbCurrent);
+		            return;
+		        }
+		        
+		        //Stage pop up (implemented to prevent clutter on GUI)---------------------------------------------
+		        Stage popup = new Stage();
+		        popup.setTitle("Select Week Range");
+
+		        VBox popupBox = new VBox(10);
+		        popupBox.setPadding(new Insets(10));
+
+		        ComboBox<String> cmbStart = new ComboBox<>();
+		        ComboBox<String> cmbEnd = new ComboBox<>();
+		        
+		        //list available week for the selected employee
+		        for (Week w : weeks) {
+		            String label = "Week #" + w.getWeekNumber();
+		            cmbStart.getItems().add(label);
+		            cmbEnd.getItems().add(label);
+		        }
+		        
+		        //confirm selection button and init two variable to hold the selected values
+		        Button btnConfirm = new Button("Confirm");
+		        btnConfirm.setOnAction(ev -> {
+		            selectedRangeStart = cmbStart.getValue();
+		            selectedRangeEnd = cmbEnd.getValue();
+		            popup.close();
+		        });
+		        
+		        //SHOW pop up -----------------------------------------------------------------------------------------
+		        popupBox.getChildren().addAll(new Label("From:"), cmbStart, new Label("To:"), cmbEnd, btnConfirm);
+		        popup.setScene(new Scene(popupBox, 250, 200));
+		        popup.show();
+		    }
+		});
 		
 
-		return vbox;
+	    // View report button logic
+		btnViewReport.setOnAction(e -> {
+		    String username = cmbReportEmployee.getValue();
+		    if (username == null) {
+		        txaReport.setText("Please select an employee.");
+		        return;
+		    }
+
+		    Employee emp = handler.findEmployeeByUsername(username);
+		    List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+		    List<Week> result = new ArrayList<>();
+
+		    if (rbCurrent.isSelected()) {
+		        Week curr = currentWeekMap.get(emp.getEmployeeID());
+		        if (curr != null) result.add(curr);
+		    } else if (rbAll.isSelected()) {
+		        result.addAll(history);
+		    } else if (rbRange.isSelected()) {
+		        if (selectedRangeStart == null || selectedRangeEnd == null) {
+		            txaReport.setText("Please select a valid week range.");
+		            return;
+		        }
+
+		        int start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
+		        int end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+		        if (start > end) {
+		            txaReport.setText("Invalid range: start > end.");
+		            return;
+		        }
+
+		        for (Week w : history) {
+		            int num = w.getWeekNumber();
+		            if (num >= start && num <= end) {
+		                result.add(w);
+		            }
+		        }
+		    }
+
+		    if (result.isEmpty()) {
+		        txaReport.setText("No week data found.");
+		        return;
+		    }
+		    
+		    List<PayRollCalculator.PayStub> stubs = new ArrayList<>();
+	        StringBuilder sb = new StringBuilder();
+
+	        for (Week w : result) {
+	            PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, w);
+	            stubs.add(stub);
+	            sb.append("Week #").append(w.getWeekNumber()).append("\n");
+	            sb.append(stub.toString()).append("\n\n");
+	        }
+
+	        if (stubs.size() > 1) {
+	            double totalGross = 0, totalTax = 0, totalNet = 0;
+	            int totalHours = 0, totalPTO = 0;
+
+	            for (PayRollCalculator.PayStub stub : stubs) {
+	                totalGross += stub.grossPay;
+	                totalTax += stub.taxes;
+	                totalNet += stub.netPay;
+	                totalHours += stub.totalHours;
+	                totalPTO += stub.ptoUsed;
+	            }
+
+	            sb.append("===== SUMMARY =====\n");
+	            sb.append("Total Weeks: ").append(stubs.size()).append("\n");
+	            sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
+	            sb.append("Total PTO Used: ").append(totalPTO).append(" hrs\n");
+	            sb.append(String.format("Total Gross Pay: $%.2f\n", totalGross));
+	            sb.append(String.format("Total Taxes: $%.2f\n", totalTax));
+	            sb.append(String.format("Total Net Pay: $%.2f\n", totalNet));
+	        }
+
+	        txaReport.setText(sb.toString());
+	    });
+
+	    cmbReportEmployee.setOnAction(e -> {
+	        selectedRangeStart = null;
+	        selectedRangeEnd = null;
+	        txaReport.clear();
+	        reportGroup.selectToggle(rbCurrent);
+	        txaReport.setText("Select a view option and click 'View Report'.");
+	    });
+	    
+	    return vbox;
 	}
-	// -----Employees Hour Entry Tab -----------------------------------------------------
+	
+// -----Employees Hour Entry Tab -----------------------------------------------------
 	private Pane buildHoursEntryEmployeeTab() {
 		VBox vbox = new VBox(10);
 		vbox.setPadding(new Insets(10));
@@ -613,7 +779,7 @@ public class Main extends Application {
 			if (ptoEmployeePerDay[i] == null)
 				ptoEmployeePerDay[i] = new CheckBox("PTO");
 
-			//TPO click boxes
+			// TPO click boxes
 			if (i >= 5) ptoEmployeePerDay[i].setDisable(true);
 			daysGrid.add(ptoEmployeePerDay[i], 2, i);
 		}
@@ -676,7 +842,7 @@ public class Main extends Application {
 	}
 
 
-	//	Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.
+//Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.-----------
 	private void displayCurrentWeek(Employee emp, Week week) {
 		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 		StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");

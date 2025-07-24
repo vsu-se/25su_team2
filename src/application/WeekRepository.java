@@ -20,7 +20,7 @@ public class WeekRepository {
 	}
 
 	public List<Week> getRecordsForEmployee(String employeeId) {
-		return records.stream().filter(r -> r.getEmployeeId().equals(employeeId)).collect(Collectors.toList());
+		return records.stream().filter(r -> r.getEmployeeId().equals(employeeId)).sorted(Comparator.comparingInt(Week::getWeekNumber)).collect(Collectors.toList());
 	}
 
 	public Week getWeek(String employeeId, int weekNum) {

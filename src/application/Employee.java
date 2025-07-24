@@ -34,19 +34,8 @@ public abstract class Employee {
 		return username;
 	}
 	
-	String getPassword() { // could not find a way to not have a getPassword method with just using txt file more research req.
-		return password;
-	}
-	
-	void setHashedPassword(String hashedPassword) {
-		this.password = hashedPassword;
-	}
-	
-	public boolean authenticate(String candidate) {
-	    if (candidate == null) return false;
-	    String hashed = DataHandler.hashPassword(candidate);
-	    return hashed.equals(this.password);
-	}
+	//Password logic
+
 	
 	public String getDepartment() {
 		return department;
@@ -71,7 +60,9 @@ public abstract class Employee {
 	public String getFullName() {
 		return firstName + " " + lastName + "(Username : " + username + ")";
 	}
-	
+
+	public String getFullNameNoUser(){ return firstName + " " + lastName;}
+
 	public static final Comparator<Employee> DEFAULT_COMPARATOR =
 		    Comparator.comparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
 		              .thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
@@ -84,4 +75,27 @@ public abstract class Employee {
 		    .thenComparing(Employee::getLastName, String.CASE_INSENSITIVE_ORDER)
 			.thenComparing(Employee::getFirstName, String.CASE_INSENSITIVE_ORDER)
 			.thenComparing(Employee::getEmployeeID);
+	
+	//Password logic and helpers 
+	String getPassword() {
+		return password;
+	}
+	
+	void setHashedPassword(String hashedPassword) {
+		this.password = hashedPassword;
+	}
+	
+	public boolean changePassword(String oldPassword, String newPassword) {
+	    if (password.equals(DataHandler.hashPassword(oldPassword))) {
+	        password = DataHandler.hashPassword(newPassword);
+	        return true;
+	    }
+	    return false;
+	}
+
+	public boolean authenticate(String candidate) {
+	    if (candidate == null) return false;
+	    String hashed = DataHandler.hashPassword(candidate);
+	    return hashed.equals(this.password);
+	}
 }

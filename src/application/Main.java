@@ -15,11 +15,11 @@ public class Main extends Application {
 	private final Map<String, Week> currentWeekMap = new HashMap<>();
 	private final WeekRepository weekRepo = new WeekRepository();
 	private Employee loggedInUser = null;
+	private Tab tabLogin;
 	private Tab tabEmployeeMgmt;
 	private Tab tabHoursEntry;
 	private Tab tabPayrollReports;
 	private Tab tabEmployeeAddHours;
-
 
 	// GUI base structure
 	// --------------------------------------------------------------------------------------
@@ -31,7 +31,6 @@ public class Main extends Application {
 	protected PasswordField txtLoginPassword = new PasswordField();
 	protected Button btnLogin = new Button("Login");
 	protected Button btnChangePassword = new Button("Change Password");
-	protected Label lblLoginMessage = new Label();
 
 	// Tab 2: Employee Management
 	// -------------------------------------------------------------------------------------
@@ -81,13 +80,12 @@ public class Main extends Application {
 	protected String selectedRangeEnd = null;
 
 	// Tab 4: Employee Hours Entry for Staff Employees
-	//------------------------------------------------------------------
+	// ------------------------------------------------------------------
 	protected Label lblEmployeeHoursHeader = new Label();
 	protected TextField[] txtEmployeeHoursPerDay = new TextField[7];
 	protected CheckBox[] ptoEmployeePerDay = new CheckBox[7];
 	protected Button btnEmployeeSubmitHours = new Button("Submit Hours");
 	protected TextArea txaEmployeeHoursMessage = new TextArea();
-
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -106,21 +104,9 @@ public class Main extends Application {
 		BorderPane brdPane = new BorderPane();
 		tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-		// Create
-		// Tabs---------------------------------------------------------------------------
-		Tab tabLogin = new Tab("Login", buildLoginTab());
-		tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab());
-		tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab());
-		tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab());
-		tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab());
-		tabEmployeeAddHours.setClosable(false);
-
-
-		//Only login tab
-		// --------------------------------------------------
-
+		// Create login tab
+		tabLogin = new Tab("Login", buildLoginTab());
 		tabPane.getTabs().add(tabLogin);
-
 		brdPane.setCenter(tabPane);
 		return brdPane;
 	}
@@ -137,155 +123,109 @@ public class Main extends Application {
 		grid.add(new Label("Password:"), 0, 1);
 		grid.add(txtLoginPassword, 1, 1);
 		grid.add(btnLogin, 1, 2);
-		grid.add( btnChangePassword, 1, 3);
-		grid.add(lblLoginMessage, 1, 4);
-
+		grid.add(btnChangePassword, 1, 3);
+		
+		//Login Button Action
 		btnLogin.setOnAction(e -> {
 			String inputUsername = txtLoginUsername.getText().trim();
 			String inputPassword = txtLoginPassword.getText().trim();
-
-			boolean found = false;
-
+			
+			//use handler to get an employee obj
+			Employee emp = handler.findEmployeeByUsername(inputUsername);
+			
+			//Username check
+			if (emp == null) {
+				showError("Username not found.");
+				return;
+			}
+			//Password check
+			if (!emp.authenticate(inputPassword)) {
+				showError("Incorrect password.");
+				return;
+			}
+			
+			
 			tabPane.getTabs().clear();
-
-			for (Manager m : handler.getManagers()) {
-				if (m.getUsername().equalsIgnoreCase(inputUsername)) {
-					if (m.authenticate(inputPassword)) {
-						lblLoginMessage.setText("Welcome Manager: " + m.getFullName());
-						lblLoginMessage.setStyle("-fx-text-fill: green;");
-						loggedInUser = m;
-
-						tabPane.getTabs().clear();
-
-						tabPane.getTabs().addAll(
-								new Tab("Login", buildLoginTab()),
-								tabEmployeeMgmt,
-								tabHoursEntry,
-								tabPayrollReports
-						);
-
-						tabPane.getSelectionModel().select(tabEmployeeMgmt);
-
-						found = true;
-						break;
-					} else {
-						lblLoginMessage.setText("Incorrect password.");
-						lblLoginMessage.setStyle("-fx-text-fill: red;");
-						tabPane.getTabs().add(new Tab("Login", buildLoginTab()));
-						return;
-					}
-				}
-			}
-
-			if (!found) {
-				for (Staff s : handler.getStaff()) {
-					if (s.getUsername().equalsIgnoreCase(inputUsername)) {
-						if (s.authenticate(inputPassword)) {
-							lblLoginMessage.setText("Welcome Staff: " + s.getFullName());
-							lblLoginMessage.setStyle("-fx-text-fill: green;");
-							loggedInUser = s;
-
-							tabPane.getTabs().clear();
-
-
-							Tab tabLogin = new Tab("Login", buildLoginTab());
-							tabLogin.setClosable(false);
-
-							Tab tabStaffHoursEntry = new Tab("Add My Hours", buildHoursEntryEmployeeTab());
-							tabStaffHoursEntry.setClosable(false);
-
-							tabPane.getTabs().addAll(
-									tabLogin,
-									tabStaffHoursEntry
-							);
-
-							tabPane.getSelectionModel().select(tabStaffHoursEntry);
-
-							found = true;
-							break;
-						} else {
-							lblLoginMessage.setText(" Incorrect password.");
-							lblLoginMessage.setStyle("-fx-text-fill: red;");
-							tabEmployeeMgmt.setDisable(true);
-							tabHoursEntry.setDisable(true);
-							tabPayrollReports.setDisable(true);
-							return;
-						}
-					}
-				}
-			}
-
-			if (!found) {
-				lblLoginMessage.setText("Username not found.");
-				lblLoginMessage.setStyle("-fx-text-fill: red;");
-				tabEmployeeMgmt.setDisable(true);
-				tabHoursEntry.setDisable(true);
-				tabPayrollReports.setDisable(true);
+			tabPane.getTabs().add(tabLogin); // keep until logout functionality is implemented
+			loggedInUser = emp; //assign the global loggedInUser to the employee;
+			
+			
+			//build tabs based on instance of the employee obj (emp)
+			if (emp instanceof Manager) {
+				tabPane.getTabs().addAll(tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab()),
+						tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab()),
+						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
+				tabPane.getSelectionModel().select(tabEmployeeMgmt);
+			} else if (emp instanceof Staff) {			
+				tabPane.getTabs().add(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()));
+				tabPane.getSelectionModel().select(tabEmployeeAddHours);
 			}
 		});
 		
+		//ChangePassword Button Action-
 		btnChangePassword.setOnAction(e -> {
-			
-			
-			//username check pop up staging
+			// Stage pop up 1 (username entry)
 			Stage popup1 = new Stage();
-	        popup1.setTitle("Enter username");
+			popup1.setTitle("Enter username");
 
-	        VBox popupBox1 = new VBox(10);
-	        popupBox1.setPadding(new Insets(10));
-	        TextField txtUsername = new TextField();
-	        Button btnConfirm1 = new Button("Confirm");
-	        Label lblError = new Label(); lblError.setStyle("-fx-text-fill: red;");
-	        
-	        
-	            
-	        //passwords change pop up staging
-	        Stage popup2 = new Stage();
-	        popup2.setTitle("Enter Old and New Password");
+			VBox popupBox1 = new VBox(10);
+			popupBox1.setPadding(new Insets(10));
+			TextField txtUsername = new TextField();
+			Button btnConfirm1 = new Button("Confirm");
 
-	        VBox popupBox2 = new VBox(10);
-	        popupBox2.setPadding(new Insets(10));
-	        
-	        PasswordField txtOldPassword = new PasswordField();
-	        PasswordField txtNewPassword = new PasswordField(); 
-	        Button btnConfirm2 = new Button("Confirm");
-	        
-	        //show popup1 
-	        popupBox1.getChildren().addAll(new Label("Username:"),txtUsername, btnConfirm1,lblError);
-	        popup1.setScene(new Scene(popupBox1, 250, 200));
-	        popup1.show();	
-            ;
-	       
-	        
-	        btnConfirm1.setOnAction(ev -> {
-	             String username = txtUsername.getText();
-	             //check if text field is blank
-	             if(username ==null || username.isBlank()) { lblError.setText("Please enter a valid username."); return;}
-	             
-	             //check if username is a valid employee
-	             Employee emp = handler.findEmployeeByUsername(username);
-	             if (emp == null){ lblError.setText("Please enter a valid username."); return;}
-	             
-	             //if checks pass open popup2
-	             popup1.close();
-	             popupBox2.getChildren().addAll(new Label("Old Password:"), txtOldPassword, new Label ("New Password"), txtNewPassword, btnConfirm2);
-	             popup2.setScene(new Scene(popupBox2, 250, 200));
-	             popup2.show();	    		    		
-	        });
-	        
-	        btnConfirm2.setOnAction(event ->{
-	        	String username = txtUsername.getText();
-	        	String oldPassword = txtOldPassword.getText();
-	        	String newPassword = txtNewPassword.getText();
-	        	Employee emp = handler.findEmployeeByUsername(username);
-	        	emp.changePassword(oldPassword, newPassword);
-	        	popup2.close();
-	        		
-	        	
-	        });
-	        
+			// Stage pop up 2 (old and new password entry)
+			Stage popup2 = new Stage();
+			popup2.setTitle("Enter Old and New Password");
+
+			VBox popupBox2 = new VBox(10);
+			popupBox2.setPadding(new Insets(10));
+
+			PasswordField txtOldPassword = new PasswordField();
+			PasswordField txtNewPassword = new PasswordField();
+			Button btnConfirm2 = new Button("Confirm");
+
+			//show popup1
+			popupBox1.getChildren().addAll(new Label("Username:"), txtUsername, btnConfirm1);
+			popup1.setScene(new Scene(popupBox1, 250, 200));
+			popup1.show();
+			
+			//Confirm1 button action
+			btnConfirm1.setOnAction(ev -> {
+				String username = txtUsername.getText();
+				Employee emp = handler.findEmployeeByUsername(username);
+				
+				//check if username is valid
+				if (username == null || username.isBlank()||emp == null) {
+					showError("Please enter a valid username.");
+					return;
+				}
+
+				// if checks pass close popup1 and open popup2
+				popup1.close();
+				popupBox2.getChildren().addAll(new Label("Old Password:"), txtOldPassword, new Label("New Password"),
+						txtNewPassword, btnConfirm2);
+				popup2.setScene(new Scene(popupBox2, 250, 200));
+				popup2.show();
+			});
+			
+			//Confirm2 button action
+			btnConfirm2.setOnAction(event -> {
+				String username = txtUsername.getText();
+				String oldPassword = txtOldPassword.getText();
+				String newPassword = txtNewPassword.getText();
+				Employee emp = handler.findEmployeeByUsername(username);
+				
+				//check for valid old and new password. if valid save to employee.txt and close popup2
+				if(newPassword == null || newPassword.isBlank()) {
+					showError("New password cannot be empty.");
+				}else if(!emp.changePassword(oldPassword, newPassword)) {
+				    showError("Incorrect old password.");
+				}else {
+					handler.saveToFile("employees.txt");
+					popup2.close();
+				}
+			});
 		});
-	        
 
 		return grid;
 	}
@@ -644,188 +584,203 @@ public class Main extends Application {
 	private Pane buildPayrollReportsTab() {
 		VBox vbox = new VBox(10);
 		vbox.setPadding(new Insets(10));
-		
-		//select employee drop down
+
+		// select employee drop down
 		vbox.getChildren().add(new Label("Select Employee:"));
 		vbox.getChildren().add(cmbReportEmployee);
-		
-		//radio buttons 
+
+		// radio buttons
 		rbCurrent.setToggleGroup(reportGroup);
 		rbAll.setToggleGroup(reportGroup);
 		rbRange.setToggleGroup(reportGroup);
 		rbCurrent.setSelected(true);
 		HBox radioBox = new HBox(10, rbCurrent, rbAll, rbRange);
 		vbox.getChildren().add(radioBox);
-		
-		//view report button and text area
+
+		// view report button and text area
 		vbox.getChildren().add(btnViewReport);
 		vbox.getChildren().add(txaReport);
 
-		//load the current items
+		// load the current items depending on instance of employee
 		cmbReportEmployee.getItems().clear();
-		for (Manager m : handler.getManagers()) {
-		    cmbReportEmployee.getItems().add(m.getUsername());
+
+		if (loggedInUser instanceof Manager) {
+			// Manager: show all employees
+			for (Manager m : handler.getManagers()) {
+				cmbReportEmployee.getItems().add(m.getUsername());
+			}
+			for (Staff s : handler.getStaff()) {
+				cmbReportEmployee.getItems().add(s.getUsername());
+			}
+			cmbReportEmployee.setDisable(false); // let manager choose
+		} else {
+			// Staff: only see themselves
+			cmbReportEmployee.getItems().add(loggedInUser.getUsername());
+			cmbReportEmployee.setValue(loggedInUser.getUsername());
+			cmbReportEmployee.setDisable(true); // lock selection
 		}
-		for (Staff s : handler.getStaff()) {
-		    cmbReportEmployee.getItems().add(s.getUsername());
-		}
-		
-		//Radio for Week range selection-----------------------------------------------------------------------
+
+		// Radio for Week range
+		// selection-----------------------------------------------------------------------
 		rbRange.setOnMouseClicked(e -> {
-		    // Allow button to reopen pop if already selected vs having to click on and off to refresh.
-		    if (rbRange.isSelected()) {
-		        String username = cmbReportEmployee.getValue();
-		        if (username == null) {
-		            txaReport.setText("Please select an employee first.");
-		            reportGroup.selectToggle(rbCurrent);
-		            return;
-		        }
-		        
-		        //load selected employee week repo
-		        Employee emp = handler.findEmployeeByUsername(username);
-		        List<Week> weeks = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+			// Allow button to reopen pop if already selected vs having to click on and off
+			// to refresh.
+			if (rbRange.isSelected()) {
+				String username = cmbReportEmployee.getValue();
+				if (username == null) {
+					txaReport.setText("Please select an employee first.");
+					reportGroup.selectToggle(rbCurrent);
+					return;
+				}
 
-		        if (weeks.isEmpty()) {
-		            txaReport.setText("No archived weeks available.");
-		            reportGroup.selectToggle(rbCurrent);
-		            return;
-		        }
-		        
-		        //Stage pop up (implemented to prevent clutter on GUI)---------------------------------------------
-		        Stage popup = new Stage();
-		        popup.setTitle("Select Week Range");
+				// load selected employee week repo
+				Employee emp = handler.findEmployeeByUsername(username);
+				List<Week> weeks = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
 
-		        VBox popupBox = new VBox(10);
-		        popupBox.setPadding(new Insets(10));
+				if (weeks.isEmpty()) {
+					txaReport.setText("No archived weeks available.");
+					reportGroup.selectToggle(rbCurrent);
+					return;
+				}
 
-		        ComboBox<String> cmbStart = new ComboBox<>();
-		        ComboBox<String> cmbEnd = new ComboBox<>();
-		        
-		        //list available week for the selected employee
-		        for (Week w : weeks) {
-		            String label = "Week #" + w.getWeekNumber();
-		            cmbStart.getItems().add(label);
-		            cmbEnd.getItems().add(label);
-		        }
-		        
-		        //confirm selection button and init two variable to hold the selected values
-		        Button btnConfirm = new Button("Confirm");
-		        btnConfirm.setOnAction(ev -> {
-		            selectedRangeStart = cmbStart.getValue();
-		            selectedRangeEnd = cmbEnd.getValue();
-		            popup.close();
-		        });
-		        
-		        //SHOW pop up -----------------------------------------------------------------------------------------
-		        popupBox.getChildren().addAll(new Label("From:"), cmbStart, new Label("To:"), cmbEnd, btnConfirm);
-		        popup.setScene(new Scene(popupBox, 250, 200));
-		        popup.show();
-		    }
+				// Stage pop up (implemented to prevent clutter on
+				// GUI)---------------------------------------------
+				Stage popup = new Stage();
+				popup.setTitle("Select Week Range");
+
+				VBox popupBox = new VBox(10);
+				popupBox.setPadding(new Insets(10));
+
+				ComboBox<String> cmbStart = new ComboBox<>();
+				ComboBox<String> cmbEnd = new ComboBox<>();
+
+				// list available week for the selected employee
+				for (Week w : weeks) {
+					String label = "Week #" + w.getWeekNumber();
+					cmbStart.getItems().add(label);
+					cmbEnd.getItems().add(label);
+				}
+
+				// confirm selection button and init two variable to hold the selected values
+				Button btnConfirm = new Button("Confirm");
+				btnConfirm.setOnAction(ev -> {
+					selectedRangeStart = cmbStart.getValue();
+					selectedRangeEnd = cmbEnd.getValue();
+					popup.close();
+				});
+
+				// SHOW pop up
+				// -----------------------------------------------------------------------------------------
+				popupBox.getChildren().addAll(new Label("From:"), cmbStart, new Label("To:"), cmbEnd, btnConfirm);
+				popup.setScene(new Scene(popupBox, 250, 200));
+				popup.show();
+			}
 		});
-		
 
-	    // View report button logic
+		// View report button logic
 		btnViewReport.setOnAction(e -> {
-		    String username = cmbReportEmployee.getValue();
-		    if (username == null) {
-		        txaReport.setText("Please select an employee.");
-		        return;
-		    }
-		    //Gather emp info and week/weekrepo
-		    Employee emp = handler.findEmployeeByUsername(username);
-		    List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-		    List<Week> result = new ArrayList<>();
-		    //check which radio button is selected
-		    if (rbCurrent.isSelected()) {
-		        Week curr = currentWeekMap.get(emp.getEmployeeID());
-		        if (curr != null) result.add(curr);
-		    } else if (rbAll.isSelected()) {
-		        result.addAll(history);
-		    } else if (rbRange.isSelected()) {
-		        if (selectedRangeStart == null || selectedRangeEnd == null) {
-		            txaReport.setText("Please select a valid week range.");
-		            return;
-		        }
-		        //get week (start ---> end) ranges, and check edge cases
-		        int start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
-		        int end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
-		        if (start > end) {
-		            txaReport.setText("Invalid range: start > end.");
-		            return;
-		        }
-		        //get the weeks from week repo in range
-		        for (Week w : history) {
-		            int num = w.getWeekNumber();
-		            if (num >= start && num <= end) {
-		                result.add(w);
-		            }
-		        }
-		    }
-		    //if for no week data found
-		    if (result.isEmpty()) {
-		        txaReport.setText("No week data found.");
-		        return;
-		    }
-		    //build a paystub list and string builder for output
-		    List<PayRollCalculator.PayStub> stubs = new ArrayList<>();
-	        StringBuilder sb = new StringBuilder();
-	        
-	        //calculate each individual week into a pay stub obj and add them to the "stubs" list/ append string builder with the Week# and stub
-	        for (Week w : result) {
-	            PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, w);
-	            stubs.add(stub);
-	            sb.append("Week #").append(w.getWeekNumber()).append("\n");
-	            sb.append(stub.toString()).append("\n\n");
-	        }
-	        
-	        //if more than one stub, calculate TOTAL of all the stubs from a specific range and append to string builder 
-	        if (stubs.size() > 1) {
-	            double totalGross = 0, totalTax = 0, totalNet = 0;
-	            int totalHours = 0, totalPTO = 0;
-	            //adding totals
-	            for (PayRollCalculator.PayStub stub : stubs) {
-	                totalGross += stub.grossPay;
-	                totalTax += stub.taxes;
-	                totalNet += stub.netPay;
-	                totalHours += stub.totalHours;
-	                totalPTO += stub.ptoUsed;
-	            }
-	            //adding to end of sb for output
-	            sb.append("===== SUMMARY =====\n");
-	            sb.append("Total Weeks: ").append(stubs.size()).append("\n");
-	            sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
-	            sb.append("Total PTO Used: ").append(totalPTO).append(" hrs\n");
-	            sb.append(String.format("Total Gross Pay: $%.2f\n", totalGross));
-	            sb.append(String.format("Total Taxes: $%.2f\n", totalTax));
-	            sb.append(String.format("Total Net Pay: $%.2f\n", totalNet));
-	        }
-	        
-	        //output the completed sb to the text are
-	        txaReport.setText(sb.toString());
-	    });
-		
-		//reset the ranges after output (to prevent mishaps of stored ranges) 
-	    cmbReportEmployee.setOnAction(e -> {
-	        selectedRangeStart = null;
-	        selectedRangeEnd = null;
-	        txaReport.clear();
-	        reportGroup.selectToggle(rbCurrent);
-	        txaReport.setText("Select a view option and click 'View Report'.");
-	    });
-	    
-	    return vbox;
+			String username = cmbReportEmployee.getValue();
+			if (username == null) {
+				txaReport.setText("Please select an employee.");
+				return;
+			}
+			// Gather emp info and week/weekrepo
+			Employee emp = handler.findEmployeeByUsername(username);
+			List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+			List<Week> result = new ArrayList<>();
+			// check which radio button is selected
+			if (rbCurrent.isSelected()) {
+				Week curr = currentWeekMap.get(emp.getEmployeeID());
+				if (curr != null)
+					result.add(curr);
+			} else if (rbAll.isSelected()) {
+				result.addAll(history);
+			} else if (rbRange.isSelected()) {
+				if (selectedRangeStart == null || selectedRangeEnd == null) {
+					txaReport.setText("Please select a valid week range.");
+					return;
+				}
+				// get week (start ---> end) ranges, and check edge cases
+				int start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
+				int end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+				if (start > end) {
+					txaReport.setText("Invalid range: start > end.");
+					return;
+				}
+				// get the weeks from week repo in range
+				for (Week w : history) {
+					int num = w.getWeekNumber();
+					if (num >= start && num <= end) {
+						result.add(w);
+					}
+				}
+			}
+			// if for no week data found
+			if (result.isEmpty()) {
+				txaReport.setText("No week data found.");
+				return;
+			}
+			// build a paystub list and string builder for output
+			List<PayRollCalculator.PayStub> stubs = new ArrayList<>();
+			StringBuilder sb = new StringBuilder();
+
+			// calculate each individual week into a pay stub obj and add them to the
+			// "stubs" list/ append string builder with the Week# and stub
+			for (Week w : result) {
+				PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, w);
+				stubs.add(stub);
+				sb.append("Week #").append(w.getWeekNumber()).append("\n");
+				sb.append(stub.toString()).append("\n\n");
+			}
+
+			// if more than one stub, calculate TOTAL of all the stubs from a specific range
+			// and append to string builder
+			if (stubs.size() > 1) {
+				double totalGross = 0, totalTax = 0, totalNet = 0;
+				int totalHours = 0, totalPTO = 0;
+				// adding totals
+				for (PayRollCalculator.PayStub stub : stubs) {
+					totalGross += stub.grossPay;
+					totalTax += stub.taxes;
+					totalNet += stub.netPay;
+					totalHours += stub.totalHours;
+					totalPTO += stub.ptoUsed;
+				}
+				// adding to end of sb for output
+				sb.append("===== SUMMARY =====\n");
+				sb.append("Total Weeks: ").append(stubs.size()).append("\n");
+				sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
+				sb.append("Total PTO Used: ").append(totalPTO).append(" hrs\n");
+				sb.append(String.format("Total Gross Pay: $%.2f\n", totalGross));
+				sb.append(String.format("Total Taxes: $%.2f\n", totalTax));
+				sb.append(String.format("Total Net Pay: $%.2f\n", totalNet));
+			}
+
+			// output the completed sb to the text are
+			txaReport.setText(sb.toString());
+		});
+
+		// reset the ranges after output (to prevent mishaps of stored ranges)
+		cmbReportEmployee.setOnAction(e -> {
+			selectedRangeStart = null;
+			selectedRangeEnd = null;
+			txaReport.clear();
+			reportGroup.selectToggle(rbCurrent);
+			txaReport.setText("Select a view option and click 'View Report'.");
+		});
+
+		return vbox;
 	}
-	
+
 // -----Employees Hour Entry Tab -----------------------------------------------------
 	private Pane buildHoursEntryEmployeeTab() {
 		VBox vbox = new VBox(10);
 		vbox.setPadding(new Insets(10));
 
 		if (loggedInUser != null) {
-			lblEmployeeHoursHeader.setText("Employee: " + loggedInUser.getFullNameNoUser() +
-					" | ID: " + loggedInUser.getEmployeeID());
-		}
-		else {
+			lblEmployeeHoursHeader.setText(
+					"Employee: " + loggedInUser.getFullNameNoUser() + " | ID: " + loggedInUser.getEmployeeID());
+		} else {
 			lblEmployeeHoursHeader.setText("No user logged in.");
 		}
 		lblEmployeeHoursHeader.setStyle("-fx-font-size: 14pt; -fx-font-weight: bold;");
@@ -849,7 +804,8 @@ public class Main extends Application {
 				ptoEmployeePerDay[i] = new CheckBox("PTO");
 
 			// TPO click boxes
-			if (i >= 5) ptoEmployeePerDay[i].setDisable(true);
+			if (i >= 5)
+				ptoEmployeePerDay[i].setDisable(true);
 			daysGrid.add(ptoEmployeePerDay[i], 2, i);
 		}
 		vbox.getChildren().add(daysGrid);
@@ -863,7 +819,7 @@ public class Main extends Application {
 
 		vbox.getChildren().add(txaEmployeeHoursMessage);
 
-		//Submit hours for employee
+		// Submit hours for employee
 		btnEmployeeSubmitHours.setOnAction(e -> {
 			if (!(loggedInUser instanceof Staff)) {
 				txaEmployeeHoursMessage.setText("Only staff employees can use this form.");
@@ -910,8 +866,14 @@ public class Main extends Application {
 		return vbox;
 	}
 
-
 //Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.-----------
+	
+	private void showError(String message) {
+		Alert alert = new Alert(Alert.AlertType.NONE, message);
+		alert.getButtonTypes().add(ButtonType.OK);
+		alert.showAndWait();
+	}
+	
 	private void displayCurrentWeek(Employee emp, Week week) {
 		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 		StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");
@@ -929,19 +891,18 @@ public class Main extends Application {
 
 		txaHoursMessage.setText(sb.toString());
 	}
-	
+
 	private String formatEmployeeHours(Employee emp) {
-	    StringBuilder sb = new StringBuilder();
-	    sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
-	    sb.append("| Department: ").append(emp.getDepartment());
-	    sb.append("| ID: ").append(emp.getEmployeeID());
-	    if (emp instanceof Manager) {
-	       sb.insert(0, ("MANAGER | "));
-	    }
-	    else{
-	       sb.insert(0,("STAFF | "));
-	    }
-	    return sb.toString();
+		StringBuilder sb = new StringBuilder();
+		sb.append(" | Name: ").append(emp.getLastName()).append(", ").append(emp.getFirstName());
+		sb.append("| Department: ").append(emp.getDepartment());
+		sb.append("| ID: ").append(emp.getEmployeeID());
+		if (emp instanceof Manager) {
+			sb.insert(0, ("MANAGER | "));
+		} else {
+			sb.insert(0, ("STAFF | "));
+		}
+		return sb.toString();
 	}
 
 	private String formatEmployeeDisplay(Employee emp) {

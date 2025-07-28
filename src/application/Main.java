@@ -30,6 +30,7 @@ public class Main extends Application {
 	protected TextField txtLoginUsername = new TextField();
 	protected PasswordField txtLoginPassword = new PasswordField();
 	protected Button btnLogin = new Button("Login");
+	protected Button btnChangePassword = new Button("Change Password");
 	protected Label lblLoginMessage = new Label();
 
 	// Tab 2: Employee Management
@@ -136,7 +137,8 @@ public class Main extends Application {
 		grid.add(new Label("Password:"), 0, 1);
 		grid.add(txtLoginPassword, 1, 1);
 		grid.add(btnLogin, 1, 2);
-		grid.add(lblLoginMessage, 1, 3);
+		grid.add( btnChangePassword, 1, 3);
+		grid.add(lblLoginMessage, 1, 4);
 
 		btnLogin.setOnAction(e -> {
 			String inputUsername = txtLoginUsername.getText().trim();
@@ -221,6 +223,69 @@ public class Main extends Application {
 				tabPayrollReports.setDisable(true);
 			}
 		});
+		
+		btnChangePassword.setOnAction(e -> {
+			
+			
+			//username check pop up staging
+			Stage popup1 = new Stage();
+	        popup1.setTitle("Enter username");
+
+	        VBox popupBox1 = new VBox(10);
+	        popupBox1.setPadding(new Insets(10));
+	        TextField txtUsername = new TextField();
+	        Button btnConfirm1 = new Button("Confirm");
+	        Label lblError = new Label(); lblError.setStyle("-fx-text-fill: red;");
+	        
+	        
+	            
+	        //passwords change pop up staging
+	        Stage popup2 = new Stage();
+	        popup2.setTitle("Enter Old and New Password");
+
+	        VBox popupBox2 = new VBox(10);
+	        popupBox2.setPadding(new Insets(10));
+	        
+	        PasswordField txtOldPassword = new PasswordField();
+	        PasswordField txtNewPassword = new PasswordField(); 
+	        Button btnConfirm2 = new Button("Confirm");
+	        
+	        //show popup1 
+	        popupBox1.getChildren().addAll(new Label("Username:"),txtUsername, btnConfirm1,lblError);
+	        popup1.setScene(new Scene(popupBox1, 250, 200));
+	        popup1.show();	
+            ;
+	       
+	        
+	        btnConfirm1.setOnAction(ev -> {
+	             String username = txtUsername.getText();
+	             //check if text field is blank
+	             if(username ==null || username.isBlank()) { lblError.setText("Please enter a valid username."); return;}
+	             
+	             //check if username is a valid employee
+	             Employee emp = handler.findEmployeeByUsername(username);
+	             if (emp == null){ lblError.setText("Please enter a valid username."); return;}
+	             
+	             //if checks pass open popup2
+	             popup1.close();
+	             popupBox2.getChildren().addAll(new Label("Old Password:"), txtOldPassword, new Label ("New Password"), txtNewPassword, btnConfirm2);
+	             popup2.setScene(new Scene(popupBox2, 250, 200));
+	             popup2.show();	    		    		
+	        });
+	        
+	        btnConfirm2.setOnAction(event ->{
+	        	String username = txtUsername.getText();
+	        	String oldPassword = txtOldPassword.getText();
+	        	String newPassword = txtNewPassword.getText();
+	        	Employee emp = handler.findEmployeeByUsername(username);
+	        	emp.changePassword(oldPassword, newPassword);
+	        	popup2.close();
+	        		
+	        	
+	        });
+	        
+		});
+	        
 
 		return grid;
 	}
@@ -666,11 +731,11 @@ public class Main extends Application {
 		        txaReport.setText("Please select an employee.");
 		        return;
 		    }
-
+		    //Gather emp info and week/weekrepo
 		    Employee emp = handler.findEmployeeByUsername(username);
 		    List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
 		    List<Week> result = new ArrayList<>();
-
+		    //check which radio button is selected
 		    if (rbCurrent.isSelected()) {
 		        Week curr = currentWeekMap.get(emp.getEmployeeID());
 		        if (curr != null) result.add(curr);
@@ -681,14 +746,14 @@ public class Main extends Application {
 		            txaReport.setText("Please select a valid week range.");
 		            return;
 		        }
-
+		        //get week (start ---> end) ranges, and check edge cases
 		        int start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
 		        int end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
 		        if (start > end) {
 		            txaReport.setText("Invalid range: start > end.");
 		            return;
 		        }
-
+		        //get the weeks from week repo in range
 		        for (Week w : history) {
 		            int num = w.getWeekNumber();
 		            if (num >= start && num <= end) {
@@ -696,26 +761,28 @@ public class Main extends Application {
 		            }
 		        }
 		    }
-
+		    //if for no week data found
 		    if (result.isEmpty()) {
 		        txaReport.setText("No week data found.");
 		        return;
 		    }
-		    
+		    //build a paystub list and string builder for output
 		    List<PayRollCalculator.PayStub> stubs = new ArrayList<>();
 	        StringBuilder sb = new StringBuilder();
-
+	        
+	        //calculate each individual week into a pay stub obj and add them to the "stubs" list/ append string builder with the Week# and stub
 	        for (Week w : result) {
 	            PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, w);
 	            stubs.add(stub);
 	            sb.append("Week #").append(w.getWeekNumber()).append("\n");
 	            sb.append(stub.toString()).append("\n\n");
 	        }
-
+	        
+	        //if more than one stub, calculate TOTAL of all the stubs from a specific range and append to string builder 
 	        if (stubs.size() > 1) {
 	            double totalGross = 0, totalTax = 0, totalNet = 0;
 	            int totalHours = 0, totalPTO = 0;
-
+	            //adding totals
 	            for (PayRollCalculator.PayStub stub : stubs) {
 	                totalGross += stub.grossPay;
 	                totalTax += stub.taxes;
@@ -723,7 +790,7 @@ public class Main extends Application {
 	                totalHours += stub.totalHours;
 	                totalPTO += stub.ptoUsed;
 	            }
-
+	            //adding to end of sb for output
 	            sb.append("===== SUMMARY =====\n");
 	            sb.append("Total Weeks: ").append(stubs.size()).append("\n");
 	            sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
@@ -732,10 +799,12 @@ public class Main extends Application {
 	            sb.append(String.format("Total Taxes: $%.2f\n", totalTax));
 	            sb.append(String.format("Total Net Pay: $%.2f\n", totalNet));
 	        }
-
+	        
+	        //output the completed sb to the text are
 	        txaReport.setText(sb.toString());
 	    });
-
+		
+		//reset the ranges after output (to prevent mishaps of stored ranges) 
 	    cmbReportEmployee.setOnAction(e -> {
 	        selectedRangeStart = null;
 	        selectedRangeEnd = null;

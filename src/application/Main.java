@@ -20,6 +20,8 @@ public class Main extends Application {
 	private Tab tabHoursEntry;
 	private Tab tabPayrollReports;
 	private Tab tabEmployeeAddHours;
+	private final Button btnLogout = new Button("Log out");
+
 
 	// GUI base structure
 	// --------------------------------------------------------------------------------------
@@ -104,6 +106,17 @@ public class Main extends Application {
 		BorderPane brdPane = new BorderPane();
 		tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
+		//Log out button in the top bar
+		HBox topBar = new HBox();
+		topBar.setPadding(new Insets(5));
+		topBar.setSpacing(10);
+		Region spacer = new Region();
+		HBox.setHgrow(spacer, Priority.ALWAYS);
+		btnLogout.setVisible(false);
+		topBar.getChildren().addAll(spacer, btnLogout);
+
+		brdPane.setTop(topBar);
+
 		// Create login tab
 		tabLogin = new Tab("Login", buildLoginTab());
 		tabPane.getTabs().add(tabLogin);
@@ -161,8 +174,24 @@ public class Main extends Application {
 						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
 				tabPane.getSelectionModel().select(tabEmployeeAddHours);
 			}
+			btnLogout.setVisible(true);
 		});
-		
+
+		// Log Out button
+		btnLogout.setOnAction(e -> {
+			tabPane.getTabs().clear();
+			tabPane.getTabs().add(tabLogin);
+			tabPane.getSelectionModel().select(tabLogin);
+			loggedInUser = null;
+
+			// Clear login text fields
+			txtLoginUsername.clear();
+			txtLoginPassword.clear();
+
+			btnLogout.setVisible(false);
+		});
+
+
 		//ChangePassword Button Action-
 		btnChangePassword.setOnAction(e -> {
 			// Stage pop up 1 (username entry)

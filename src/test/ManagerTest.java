@@ -137,18 +137,62 @@ class ManagerTest {
         Assertions.assertTrue(lastLine.contains("NewPTO:true"));
     }
 
-	/*
-	 * @Test void testEditDailyEntryFailsForMissingEmployee() throws Exception {
-	 * String missingUsername = "not_a_real_user"; int dayIndex = 0; int newHours =
-	 * 8; boolean newPTO = false;
-	 * 
-	 * boolean result = manager.editDailyEntry( missingUsername, dayIndex, newHours,
-	 * newPTO, currentWeekMap, weekRepo, TEST_HOURS_FILE, TEST_AUDIT_FILE );
-	 * 
-	 * Assertions.assertFalse(result);
-	 * 
-	 * // Audit file should remain empty List<String> auditLines =
-	 * Files.readAllLines(Paths.get(TEST_AUDIT_FILE));
-	 * Assertions.assertTrue(auditLines.isEmpty()); }
-	 */
+    
+    @Test
+    void testAuditEmployee_AllWeeks() throws Exception {
+        // Write sample audit entries to the audit file
+        try (PrintWriter writer = new PrintWriter(new FileWriter(TEST_AUDIT_FILE))) {
+            writer.println("ManagerID:0001 | EmployeeID:" + bob.getEmployeeID() + " | Week:1 | Day:0 | OldHours:8 | NewHours:9 | OldPTO:false | NewPTO:false");
+            writer.println("ManagerID:0001 | EmployeeID:" + bob.getEmployeeID() + " | Week:2 | Day:1 | OldHours:7 | NewHours:8 | OldPTO:false | NewPTO:true");
+            writer.println("ManagerID:0001 | EmployeeID:9999 | Week:1 | Day:2 | OldHours:6 | NewHours:7 | OldPTO:false | NewPTO:false");
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(out));
+
+        manager.auditEmployee(bob.getEmployeeID(), Collections.emptyList(), TEST_AUDIT_FILE, weekRepo);
+
+        System.setOut(originalOut);
+        String output = out.toString();
+        Assertions.assertTrue(output.contains("Week:1"));
+        Assertions.assertTrue(output.contains("Week:2"));
+        Assertions.assertFalse(output.contains("EmployeeID:9999"));
+    }
+
+    @Test
+    void testAuditEmployee_SpecificWeek() throws Exception {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(TEST_AUDIT_FILE))) {
+            writer.println("ManagerID:0001 | EmployeeID:" + bob.getEmployeeID() + " | Week:1 | Day:0 | OldHours:8 | NewHours:9 | OldPTO:false | NewPTO:false");
+            writer.println("ManagerID:0001 | EmployeeID:" + bob.getEmployeeID() + " | Week:2 | Day:1 | OldHours:7 | NewHours:8 | OldPTO:false | NewPTO:true");
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(out));
+
+        manager.auditEmployee(bob.getEmployeeID(), Arrays.asList(1), TEST_AUDIT_FILE, weekRepo);
+
+        System.setOut(originalOut);
+        String output = out.toString();
+        Assertions.assertTrue(output.contains("Week:1"));
+        Assertions.assertFalse(output.contains("Week:2"));
+    }
+
+    @Test
+    void testAuditEmployee_NoRecords() throws Exception {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(TEST_AUDIT_FILE))) {
+            writer.println("ManagerID:0001 | EmployeeID:9999 | Week:1 | Day:2 | OldHours:6 | NewHours:7 | OldPTO:false | NewPTO:false");
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(out));
+
+        manager.auditEmployee("notfound", Collections.emptyList(), TEST_AUDIT_FILE, weekRepo);
+
+        System.setOut(originalOut);
+        String output = out.toString();
+        Assertions.assertTrue(output.contains("No audit records found for employee notfound"));
+    }
 }

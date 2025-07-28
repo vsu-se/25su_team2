@@ -157,7 +157,8 @@ public class Main extends Application {
 						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
 				tabPane.getSelectionModel().select(tabEmployeeMgmt);
 			} else if (emp instanceof Staff) {			
-				tabPane.getTabs().add(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()));
+				tabPane.getTabs().addAll(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()),
+						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
 				tabPane.getSelectionModel().select(tabEmployeeAddHours);
 			}
 		});
@@ -620,8 +621,7 @@ public class Main extends Application {
 			cmbReportEmployee.setDisable(true); // lock selection
 		}
 
-		// Radio for Week range
-		// selection-----------------------------------------------------------------------
+		// Radio for Week range selection
 		rbRange.setOnMouseClicked(e -> {
 			// Allow button to reopen pop if already selected vs having to click on and off
 			// to refresh.
@@ -633,9 +633,10 @@ public class Main extends Application {
 					return;
 				}
 
-				// load selected employee week repo
+				// load selected employee and their week repo
 				Employee emp = handler.findEmployeeByUsername(username);
 				List<Week> weeks = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+				
 
 				if (weeks.isEmpty()) {
 					txaReport.setText("No archived weeks available.");
@@ -643,8 +644,7 @@ public class Main extends Application {
 					return;
 				}
 
-				// Stage pop up (implemented to prevent clutter on
-				// GUI)---------------------------------------------
+				// Stage pop up (implemented to prevent clutter on GUI)
 				Stage popup = new Stage();
 				popup.setTitle("Select Week Range");
 
@@ -660,17 +660,22 @@ public class Main extends Application {
 					cmbStart.getItems().add(label);
 					cmbEnd.getItems().add(label);
 				}
-
-				// confirm selection button and init two variable to hold the selected values
-				Button btnConfirm = new Button("Confirm");
+				
+				Button btnConfirm = new Button("Confirm");			
+				//Confirm button action
 				btnConfirm.setOnAction(ev -> {
+					//store the start and end values for later call args
 					selectedRangeStart = cmbStart.getValue();
 					selectedRangeEnd = cmbEnd.getValue();
-					popup.close();
+					
+					//automatically display report after confirm is clicked given that the ranges are not null.
+					if (rbRange.isSelected() && selectedRangeStart != null && selectedRangeEnd != null) {
+				        btnViewReport.fire();
+				        popup.close();
+					}
 				});
 
 				// SHOW pop up
-				// -----------------------------------------------------------------------------------------
 				popupBox.getChildren().addAll(new Label("From:"), cmbStart, new Label("To:"), cmbEnd, btnConfirm);
 				popup.setScene(new Scene(popupBox, 250, 200));
 				popup.show();
@@ -684,91 +689,42 @@ public class Main extends Application {
 				txaReport.setText("Please select an employee.");
 				return;
 			}
-			// Gather emp info and week/weekrepo
+			// Gather emp/week/weekrepo info to pass to PayrollCalculator class
 			Employee emp = handler.findEmployeeByUsername(username);
 			List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-			List<Week> result = new ArrayList<>();
+			Week current = currentWeekMap.get(emp.getEmployeeID());
+			
 			// check which radio button is selected
-			if (rbCurrent.isSelected()) {
-				Week curr = currentWeekMap.get(emp.getEmployeeID());
-				if (curr != null)
-					result.add(curr);
-			} else if (rbAll.isSelected()) {
-				result.addAll(history);
-			} else if (rbRange.isSelected()) {
-				if (selectedRangeStart == null || selectedRangeEnd == null) {
-					txaReport.setText("Please select a valid week range.");
-					return;
-				}
-				// get week (start ---> end) ranges, and check edge cases
-				int start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
-				int end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
-				if (start > end) {
-					txaReport.setText("Invalid range: start > end.");
-					return;
-				}
-				// get the weeks from week repo in range
-				for (Week w : history) {
-					int num = w.getWeekNumber();
-					if (num >= start && num <= end) {
-						result.add(w);
-					}
-				}
-			}
-			// if for no week data found
-			if (result.isEmpty()) {
-				txaReport.setText("No week data found.");
-				return;
-			}
-			// build a paystub list and string builder for output
-			List<PayRollCalculator.PayStub> stubs = new ArrayList<>();
-			StringBuilder sb = new StringBuilder();
+			String mode;
+		    if (rbCurrent.isSelected()) {
+		        mode = "current";
+		    } else if (rbAll.isSelected()) {
+		        mode = "all";
+		    } else if (rbRange.isSelected()) {
+		        mode = "range";
+		    } else {
+		        txaReport.setText("Please select a report type.");
+		        return;
+		    }
 
-			// calculate each individual week into a pay stub obj and add them to the
-			// "stubs" list/ append string builder with the Week# and stub
-			for (Week w : result) {
-				PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, w);
-				stubs.add(stub);
-				sb.append("Week #").append(w.getWeekNumber()).append("\n");
-				sb.append(stub.toString()).append("\n\n");
-			}
-
-			// if more than one stub, calculate TOTAL of all the stubs from a specific range
-			// and append to string builder
-			if (stubs.size() > 1) {
-				double totalGross = 0, totalTax = 0, totalNet = 0;
-				int totalHours = 0, totalPTO = 0;
-				// adding totals
-				for (PayRollCalculator.PayStub stub : stubs) {
-					totalGross += stub.grossPay;
-					totalTax += stub.taxes;
-					totalNet += stub.netPay;
-					totalHours += stub.totalHours;
-					totalPTO += stub.ptoUsed;
-				}
-				// adding to end of sb for output
-				sb.append("===== SUMMARY =====\n");
-				sb.append("Total Weeks: ").append(stubs.size()).append("\n");
-				sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
-				sb.append("Total PTO Used: ").append(totalPTO).append(" hrs\n");
-				sb.append(String.format("Total Gross Pay: $%.2f\n", totalGross));
-				sb.append(String.format("Total Taxes: $%.2f\n", totalTax));
-				sb.append(String.format("Total Net Pay: $%.2f\n", totalNet));
-			}
-
-			// output the completed sb to the text are
-			txaReport.setText(sb.toString());
+		    Integer start = null; 
+		    Integer end = null;
+		    
+		    //if range is selected
+		    if (mode.equals("range")) {
+		        if (selectedRangeStart == null || selectedRangeEnd == null) {
+		            txaReport.setText("Please select a valid week range.");
+		            return;
+		        }
+		        //strip the "Week #" and convert to integer
+		          start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
+		          end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+		    }
+		    // Generate and display report using PayrollCalculator helper
+		    String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
+		    txaReport.setText(report);
 		});
-
-		// reset the ranges after output (to prevent mishaps of stored ranges)
-		cmbReportEmployee.setOnAction(e -> {
-			selectedRangeStart = null;
-			selectedRangeEnd = null;
-			txaReport.clear();
-			reportGroup.selectToggle(rbCurrent);
-			txaReport.setText("Select a view option and click 'View Report'.");
-		});
-
+				
 		return vbox;
 	}
 

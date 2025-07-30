@@ -70,42 +70,42 @@ class ManagerTest {
             
     }
 
-//    @Test
-//    @DisplayName("Login succeeds with valid manager credentials")
-//    void loginSucceedsWithValidCredentials() throws AuthenticationException {
-//        Manager result = Manager.login("asmith", "secret123", employees);
-//        assertSame(alice, result, "Should return the seeded Manager instance");
-//    }
-//
-//    @Test
-//    @DisplayName("Login fails with wrong password")
-//    void loginFailsWithWrongPassword() {
-//        AuthenticationException ex = assertThrows(
-//            AuthenticationException.class,
-//            () -> Manager.login("asmith", "wrongpass", employees)
-//        );
-//        assertEquals("Invalid username or password", ex.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Login fails for unknown username")
-//    void loginFailsForUnknownUsername() {
-//        AuthenticationException ex = assertThrows(
-//            AuthenticationException.class,
-//            () -> Manager.login("unknownUser", "secret123", employees)
-//        );
-//        assertEquals("Invalid username or password", ex.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Login fails when user is not a manager")
-//    void loginFailsIfUserIsNotManager() {
-//        AuthenticationException ex = assertThrows(
-//            AuthenticationException.class,
-//            () -> Manager.login("bjones", "password", employees)
-//        );
-//        assertEquals("User is not a manager", ex.getMessage());
-//    }
+    @Test
+    @DisplayName("Login succeeds with valid manager credentials")
+    void loginSucceedsWithValidCredentials() throws AuthenticationException {
+        Manager result = Manager.login("asmith", "secret123", employees);
+        assertSame(alice, result, "Should return the seeded Manager instance");
+    }
+
+    @Test
+    @DisplayName("Login fails with wrong password")
+    void loginFailsWithWrongPassword() {
+        AuthenticationException ex = assertThrows(
+            AuthenticationException.class,
+            () -> Manager.login("asmith", "wrongpass", employees)
+        );
+        assertEquals("Invalid username or password", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Login fails for unknown username")
+    void loginFailsForUnknownUsername() {
+        AuthenticationException ex = assertThrows(
+            AuthenticationException.class,
+            () -> Manager.login("unknownUser", "secret123", employees)
+        );
+        assertEquals("Invalid username or password", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Login fails when user is not a manager")
+    void loginFailsIfUserIsNotManager() {
+        AuthenticationException ex = assertThrows(
+            AuthenticationException.class,
+            () -> Manager.login("bjones", "password", employees)
+        );
+        assertEquals("User is not a manager", ex.getMessage());
+    }
     
     @Test
     void testEditDailyEntryPersistsAndAudits() throws Exception {
@@ -195,4 +195,29 @@ class ManagerTest {
         String output = out.toString();
         Assertions.assertTrue(output.contains("No audit records found for employee notfound"));
     }
+    
+    @Test
+    void testAuditEditorSingleWeek() throws Exception {
+        // Write two audit entries for different weeks
+        try (PrintWriter writer = new PrintWriter(new FileWriter(TEST_AUDIT_FILE))) {
+            writer.println("ManagerID:" + alice.getEmployeeID() + " | EmployeeID:" + bob.getEmployeeID() + " | Week:1 | Day:0 | OldHours:8 | NewHours:9 | OldPTO:false | NewPTO:false");
+            writer.println("ManagerID:" + alice.getEmployeeID() + " | EmployeeID:" + bob.getEmployeeID() + " | Week:2 | Day:1 | OldHours:7 | NewHours:8 | OldPTO:false | NewPTO:true");
+        }
+        String result = alice.auditEditor(TEST_AUDIT_FILE, "single", 1, null, null);
+        Assertions.assertTrue(result.contains("Week:1"));
+        Assertions.assertFalse(result.contains("Week:2"));
+    }
+
+    @Test
+    void testAuditEditorAllWeeks() throws Exception {
+        // Write two audit entries for different weeks
+        try (PrintWriter writer = new PrintWriter(new FileWriter(TEST_AUDIT_FILE))) {
+            writer.println("ManagerID:" + alice.getEmployeeID() + " | EmployeeID:" + bob.getEmployeeID() + " | Week:1 | Day:0 | OldHours:8 | NewHours:9 | OldPTO:false | NewPTO:false");
+            writer.println("ManagerID:" + alice.getEmployeeID() + " | EmployeeID:" + bob.getEmployeeID() + " | Week:2 | Day:1 | OldHours:7 | NewHours:8 | OldPTO:false | NewPTO:true");
+        }
+        String result = alice.auditEditor(TEST_AUDIT_FILE, "all", null, null, null);
+        Assertions.assertTrue(result.contains("Week:1"));
+        Assertions.assertTrue(result.contains("Week:2"));
+    }
+
 }

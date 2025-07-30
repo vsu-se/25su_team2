@@ -116,4 +116,43 @@ public class Manager extends Employee {
 	        e.printStackTrace();
 	    }
 	}
+	
+	// Returns a string of audit records for this manager, filtered by mode and week/range.
+	// mode: "single" (one week), "range" (week range), "all" (all weeks)
+	public String auditEditor(String auditFilePath, String mode, Integer week, Integer rangeStart, Integer rangeEnd) {
+	    StringBuilder sb = new StringBuilder();
+	    try (Scanner scanner = new Scanner(new java.io.File(auditFilePath))) {
+	        // Read each line in the audit file
+	        while (scanner.hasNextLine()) {
+	            String line = scanner.nextLine();
+	            // Only process lines for this manager
+	            if (line.contains("ManagerID:" + this.getEmployeeID())) {
+	                int weekNum = -1;
+	                // Split line into parts to find the week number
+	                String[] parts = line.split("\\|");
+	                for (String part : parts) {
+	                    part = part.trim();
+	                    if (part.startsWith("Week:")) {
+	                        try {
+	                            weekNum = Integer.parseInt(part.substring(5));
+	                        } catch (NumberFormatException ignored) {}
+	                        break;
+	                    }
+	                }
+	                // Filter by mode
+	                if ("single".equalsIgnoreCase(mode) && weekNum == week) {
+	                    sb.append(line).append("\n");
+	                } else if ("range".equalsIgnoreCase(mode) && weekNum >= rangeStart && weekNum <= rangeEnd) {
+	                    sb.append(line).append("\n");
+	                } else if ("all".equalsIgnoreCase(mode)) {
+	                    sb.append(line).append("\n");
+	                }
+	            }
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	    // Return results or a message if none found
+	    return sb.length() == 0 ? "No audit records found." : sb.toString();
+	}
 }	

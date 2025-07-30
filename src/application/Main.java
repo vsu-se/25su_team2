@@ -5,6 +5,8 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.stage.FileChooser;
 import java.io.File;
+import java.io.PrintWriter;
+
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
@@ -23,7 +25,6 @@ public class Main extends Application {
 	private Tab tabPayrollReports;
 	private Tab tabEmployeeAddHours;
 	private final Button btnLogout = new Button("Log out");
-
 
 	// GUI base structure
 	// --------------------------------------------------------------------------------------
@@ -76,6 +77,7 @@ public class Main extends Application {
 	protected ComboBox<String> cmbReportEmployee = new ComboBox<>();
 	protected ComboBox<String> cmbReportWeek = new ComboBox<>();
 	protected Button btnViewReport = new Button("View Report");
+	protected Button btnSaveReport = new Button("Save Report");
 	protected TextArea txaReport = new TextArea();
 	protected RadioButton rbCurrent = new RadioButton("Current Week");
 	protected RadioButton rbAll = new RadioButton("All Weeks");
@@ -109,7 +111,7 @@ public class Main extends Application {
 		BorderPane brdPane = new BorderPane();
 		tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-		//Log out button in the top bar
+		// Log out button in the top bar
 		HBox topBar = new HBox();
 		topBar.setPadding(new Insets(5));
 		topBar.setSpacing(10);
@@ -140,39 +142,37 @@ public class Main extends Application {
 		grid.add(txtLoginPassword, 1, 1);
 		grid.add(btnLogin, 1, 2);
 		grid.add(btnChangePassword, 1, 3);
-		
-		//Login Button Action
+
+		// Login Button Action
 		btnLogin.setOnAction(e -> {
 			String inputUsername = txtLoginUsername.getText().trim();
 			String inputPassword = txtLoginPassword.getText().trim();
-			
-			//use handler to get an employee obj
+
+			// use handler to get an employee obj
 			Employee emp = handler.findEmployeeByUsername(inputUsername);
-			
-			//Username check
+
+			// Username check
 			if (emp == null) {
 				showError("Username not found.");
 				return;
 			}
-			//Password check
+			// Password check
 			if (!emp.authenticate(inputPassword)) {
 				showError("Incorrect password.");
 				return;
 			}
-			
-			
+
 			tabPane.getTabs().clear();
 			tabPane.getTabs().add(tabLogin); // keep until logout functionality is implemented
-			loggedInUser = emp; //assign the global loggedInUser to the employee;
-			
-			
-			//build tabs based on instance of the employee obj (emp)
+			loggedInUser = emp; // assign the global loggedInUser to the employee;
+
+			// build tabs based on instance of the employee obj (emp)
 			if (emp instanceof Manager) {
 				tabPane.getTabs().addAll(tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab()),
 						tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab()),
 						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
 				tabPane.getSelectionModel().select(tabEmployeeMgmt);
-			} else if (emp instanceof Staff) {			
+			} else if (emp instanceof Staff) {
 				tabPane.getTabs().addAll(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()),
 						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
 				tabPane.getSelectionModel().select(tabEmployeeAddHours);
@@ -194,8 +194,7 @@ public class Main extends Application {
 			btnLogout.setVisible(false);
 		});
 
-
-		//ChangePassword Button Action-
+		// ChangePassword Button Action-
 		btnChangePassword.setOnAction(e -> {
 			// Stage pop up 1 (username entry)
 			Stage popup1 = new Stage();
@@ -217,18 +216,18 @@ public class Main extends Application {
 			PasswordField txtNewPassword = new PasswordField();
 			Button btnConfirm2 = new Button("Confirm");
 
-			//show popup1
+			// show popup1
 			popupBox1.getChildren().addAll(new Label("Username:"), txtUsername, btnConfirm1);
 			popup1.setScene(new Scene(popupBox1, 250, 200));
 			popup1.show();
-			
-			//Confirm1 button action
+
+			// Confirm1 button action
 			btnConfirm1.setOnAction(ev -> {
 				String username = txtUsername.getText();
 				Employee emp = handler.findEmployeeByUsername(username);
-				
-				//check if username is valid
-				if (username == null || username.isBlank()||emp == null) {
+
+				// check if username is valid
+				if (username == null || username.isBlank() || emp == null) {
 					showError("Please enter a valid username.");
 					return;
 				}
@@ -240,20 +239,21 @@ public class Main extends Application {
 				popup2.setScene(new Scene(popupBox2, 250, 200));
 				popup2.show();
 			});
-			
-			//Confirm2 button action
+
+			// Confirm2 button action
 			btnConfirm2.setOnAction(event -> {
 				String username = txtUsername.getText();
 				String oldPassword = txtOldPassword.getText();
 				String newPassword = txtNewPassword.getText();
 				Employee emp = handler.findEmployeeByUsername(username);
-				
-				//check for valid old and new password. if valid save to employee.txt and close popup2
-				if(newPassword == null || newPassword.isBlank()) {
+
+				// check for valid old and new password. if valid save to employee.txt and close
+				// popup2
+				if (newPassword == null || newPassword.isBlank()) {
 					showError("New password cannot be empty.");
-				}else if(!emp.changePassword(oldPassword, newPassword)) {
-				    showError("Incorrect old password.");
-				}else {
+				} else if (!emp.changePassword(oldPassword, newPassword)) {
+					showError("Incorrect old password.");
+				} else {
 					handler.saveToFile("employees.txt");
 					popup2.close();
 				}
@@ -455,7 +455,7 @@ public class Main extends Application {
 
 		vbox.getChildren().add(daysGrid);
 		HBox buttonRow = new HBox(10);
-		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek,btnLoadBulkHours);
+		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek, btnLoadBulkHours);
 		vbox.getChildren().add(buttonRow);
 		vbox.getChildren().add(txaHoursMessage);
 
@@ -609,24 +609,22 @@ public class Main extends Application {
 			}
 			txaAllEmployeesCurrentWeek.setText(sb.toString());
 		});
-		
+
 		btnLoadBulkHours.setOnAction(e -> {
-		    FileChooser fileChooser = new FileChooser();
-		    fileChooser.setTitle("Select Bulk Hours File");
-		    fileChooser.getExtensionFilters().add(
-		        new FileChooser.ExtensionFilter("Text Files", "*.txt")
-		    );
+			FileChooser fileChooser = new FileChooser();
+			fileChooser.setTitle("Select Bulk Hours File");
+			fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
 
-		    File selectedFile = fileChooser.showOpenDialog(null);
-		    if (selectedFile != null) {
-		        List<String> messages = weekRepo.loadBulkHours(selectedFile);
+			File selectedFile = fileChooser.showOpenDialog(null);
+			if (selectedFile != null) {
+				List<String> messages = weekRepo.loadBulkHours(selectedFile);
 
-		        if (!messages.isEmpty()) {
-		            showError(String.join("\n", messages));
-		        } else {
-		            showError("Bulk load completed successfully.");
-		        }
-		    }
+				if (!messages.isEmpty()) {
+					showError(String.join("\n", messages));
+				} else {
+					showError("Bulk load completed successfully.");
+				}
+			}
 		});
 
 		return hbox;
@@ -650,14 +648,14 @@ public class Main extends Application {
 		vbox.getChildren().add(radioBox);
 
 		// view report button and text area
-		vbox.getChildren().add(btnViewReport);
-		vbox.getChildren().add(txaReport);
+		HBox buttonBox = new HBox(10, btnViewReport, btnSaveReport);
+		vbox.getChildren().addAll(buttonBox, txaReport);
 
 		// load the current items depending on instance of employee
 		cmbReportEmployee.getItems().clear();
 
 		if (loggedInUser instanceof Manager) {
-			// Manager: show all employees
+			cmbReportEmployee.getItems().add("All Employees");
 			for (Manager m : handler.getManagers()) {
 				cmbReportEmployee.getItems().add(m.getUsername());
 			}
@@ -687,7 +685,6 @@ public class Main extends Application {
 				// load selected employee and their week repo
 				Employee emp = handler.findEmployeeByUsername(username);
 				List<Week> weeks = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-				
 
 				if (weeks.isEmpty()) {
 					txaReport.setText("No archived weeks available.");
@@ -711,18 +708,19 @@ public class Main extends Application {
 					cmbStart.getItems().add(label);
 					cmbEnd.getItems().add(label);
 				}
-				
-				Button btnConfirm = new Button("Confirm");			
-				//Confirm button action
+
+				Button btnConfirm = new Button("Confirm");
+				// Confirm button action
 				btnConfirm.setOnAction(ev -> {
-					//store the start and end values for later call args
+					// store the start and end values for later call args
 					selectedRangeStart = cmbStart.getValue();
 					selectedRangeEnd = cmbEnd.getValue();
-					
-					//automatically display report after confirm is clicked given that the ranges are not null.
+
+					// automatically display report after confirm is clicked given that the ranges
+					// are not null.
 					if (rbRange.isSelected() && selectedRangeStart != null && selectedRangeEnd != null) {
-				        btnViewReport.fire();
-				        popup.close();
+						btnViewReport.fire();
+						popup.close();
 					}
 				});
 
@@ -735,47 +733,192 @@ public class Main extends Application {
 
 		// View report button logic
 		btnViewReport.setOnAction(e -> {
-			String username = cmbReportEmployee.getValue();
-			if (username == null) {
-				txaReport.setText("Please select an employee.");
-				return;
-			}
-			// Gather emp/week/weekrepo info to pass to PayrollCalculator class
-			Employee emp = handler.findEmployeeByUsername(username);
-			List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-			Week current = currentWeekMap.get(emp.getEmployeeID());
-			
-			// check which radio button is selected
-			String mode;
-		    if (rbCurrent.isSelected()) {
-		        mode = "current";
-		    } else if (rbAll.isSelected()) {
-		        mode = "all";
-		    } else if (rbRange.isSelected()) {
-		        mode = "range";
-		    } else {
+		    String username = cmbReportEmployee.getValue();
+		    if (username == null) {
+		        txaReport.setText("Please select an employee.");
+		        return;
+		    }
+
+		    String mode;
+		    if (rbCurrent.isSelected()) mode = "current";
+		    else if (rbAll.isSelected()) mode = "all";
+		    else if (rbRange.isSelected()) mode = "range";
+		    else {
 		        txaReport.setText("Please select a report type.");
 		        return;
 		    }
 
-		    Integer start = null; 
-		    Integer end = null;
-		    
-		    //if range is selected
+		    final Integer start;
+		    final Integer end;
 		    if (mode.equals("range")) {
 		        if (selectedRangeStart == null || selectedRangeEnd == null) {
 		            txaReport.setText("Please select a valid week range.");
 		            return;
 		        }
-		        //strip the "Week #" and convert to integer
-		          start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
-		          end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+		        start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
+		        end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+		    } else {
+		        start = null;
+		        end = null;
 		    }
-		    // Generate and display report using PayrollCalculator helper
+
+		    if (username.equals("All Employees")) {
+		        StringBuilder reportAll = new StringBuilder();
+		        double totalGross = 0, totalTax = 0, totalNet = 0;
+
+		        List<Employee> sorted = new ArrayList<>(handler.getAllEmps());
+		        sorted.sort(Comparator.comparing(Employee::getDepartment)
+		            .thenComparing(Employee::getLastName)
+		            .thenComparing(Employee::getFirstName)
+		            .thenComparing(Employee::getEmployeeID));
+
+		        for (Employee emp : sorted) {
+		            reportAll.append("===== ")
+		                     .append(emp.getFirstName()).append(" ")
+		                     .append(emp.getLastName()).append(" (")
+		                     .append(emp.getEmployeeID()).append(") - ")
+		                     .append(emp.getDepartment()).append(" =====\n");
+
+		            List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+		            Week current = currentWeekMap.get(emp.getEmployeeID());
+
+		            String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
+		            reportAll.append(report).append("\n");
+
+		            List<Week> filtered = switch (mode) {
+		                case "current" -> current != null ? List.of(current) : List.of();
+		                case "all" -> history;
+		                case "range" -> history.stream()
+		                        .filter(w -> w.getWeekNumber() >= start && w.getWeekNumber() <= end)
+		                        .toList();
+		                default -> List.of();
+		            };
+
+		            if (!filtered.isEmpty()) {
+		                PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, filtered);
+		                totalGross += stub.grossPay;
+		                totalTax += stub.taxes;
+		                totalNet += stub.netPay;
+		            } else {
+		                reportAll.append("No data for selected range.\n");
+		            }
+
+		            reportAll.append("\n");
+		        }
+
+		        reportAll.append("========  Total ========\n");
+		        reportAll.append(String.format("Total Gross Pay: $%.2f\n", totalGross));
+		        reportAll.append(String.format("Total Taxes: $%.2f\n", totalTax));
+		        reportAll.append(String.format("Total Net Pay: $%.2f\n", totalNet));
+		        txaReport.setText(reportAll.toString());
+		        return;
+		    }
+
+		    // Single employee
+		    Employee emp = handler.findEmployeeByUsername(username);
+		    List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+		    Week current = currentWeekMap.get(emp.getEmployeeID());
+
 		    String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
 		    txaReport.setText(report);
 		});
-				
+
+		btnSaveReport.setOnAction(e -> {
+		    String username = cmbReportEmployee.getValue();
+		    if (username == null) {
+		        showError("Please select an employee first.");
+		        return;
+		    }
+
+		    FileChooser fileChooser = new FileChooser();
+		    fileChooser.setTitle("Save Paystub Report");
+		    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+		    File file = fileChooser.showSaveDialog(null);
+		    if (file == null) return;
+
+		    try (PrintWriter writer = new PrintWriter(file)) {
+		        String mode;
+		        if (rbCurrent.isSelected()) mode = "current";
+		        else if (rbAll.isSelected()) mode = "all";
+		        else if (rbRange.isSelected()) mode = "range";
+		        else {
+		            showError("Please select a report type.");
+		            return;
+		        }
+
+		        final Integer start;
+		        final Integer end;
+		        if (mode.equals("range")) {
+		            if (selectedRangeStart == null || selectedRangeEnd == null) {
+		                showError("Please select a valid week range.");
+		                return;
+		            }
+		            start = Integer.parseInt(selectedRangeStart.replace("Week #", ""));
+		            end = Integer.parseInt(selectedRangeEnd.replace("Week #", ""));
+		        } else {
+		            start = null;
+		            end = null;
+		        }
+
+		        if (username.equals("All Employees")) {
+		            double totalGross = 0, totalTax = 0, totalNet = 0;
+
+		            List<Employee> sorted = new ArrayList<>(handler.getAllEmps());
+		            sorted.sort(Comparator.comparing(Employee::getDepartment)
+		                .thenComparing(Employee::getLastName)
+		                .thenComparing(Employee::getFirstName)
+		                .thenComparing(Employee::getEmployeeID));
+
+		            for (Employee emp : sorted) {
+		                writer.println("===== " + emp.getFirstName() + " " + emp.getLastName() +
+		                        " (" + emp.getEmployeeID() + ") - " + emp.getDepartment() + " =====");
+
+		                List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+		                Week current = currentWeekMap.get(emp.getEmployeeID());
+
+		                String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
+		                writer.println(report);
+
+		                List<Week> filtered = switch (mode) {
+		                    case "current" -> current != null ? List.of(current) : List.of();
+		                    case "all" -> history;
+		                    case "range" -> history.stream()
+		                            .filter(w -> w.getWeekNumber() >= start && w.getWeekNumber() <= end)
+		                            .toList();
+		                    default -> List.of();
+		                };
+
+		                if (!filtered.isEmpty()) {
+		                    PayRollCalculator.PayStub stub = PayRollCalculator.calculatePay(emp, filtered);
+		                    totalGross += stub.grossPay;
+		                    totalTax += stub.taxes;
+		                    totalNet += stub.netPay;
+		                } else {
+		                    writer.println("No data for selected range.");
+		                }
+
+		                writer.println();
+		            }
+
+		            writer.println("======== Total ========");
+		            writer.printf("Total Gross Pay: $%.2f\n", totalGross);
+		            writer.printf("Total Taxes: $%.2f\n", totalTax);
+		            writer.printf("Total Net Pay: $%.2f\n", totalNet);
+		        } else {
+		            Employee emp = handler.findEmployeeByUsername(username);
+		            List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+		            Week current = currentWeekMap.get(emp.getEmployeeID());
+
+		            String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
+		            writer.println(report);
+		        }
+
+		        showError("Report saved successfully.");
+		    } catch (Exception ex) {
+		        showError("Error saving report: " + ex.getMessage());
+		    }
+		});
+
 		return vbox;
 	}
 
@@ -874,13 +1017,13 @@ public class Main extends Application {
 	}
 
 //Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.-----------
-	
+
 	private void showError(String message) {
 		Alert alert = new Alert(Alert.AlertType.NONE, message);
 		alert.getButtonTypes().add(ButtonType.OK);
 		alert.showAndWait();
 	}
-	
+
 	private void displayCurrentWeek(Employee emp, Week week) {
 		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 		StringBuilder sb = new StringBuilder("Current Week: " + emp.getFullName() + "\n");

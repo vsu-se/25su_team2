@@ -3,6 +3,8 @@ package application;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.stage.FileChooser;
+import java.io.File;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
@@ -68,6 +70,7 @@ public class Main extends Application {
 	protected Label lblAllEmployees = new Label("All Employees in Hours in Current Week");
 	protected Button btnDisplayAllCurrentWeek = new Button("Display");
 	protected TextArea txaAllEmployeesCurrentWeek = new TextArea();
+	protected Button btnLoadBulkHours = new Button("Load Bulk Hours");
 	// Tab 4: Payroll Reports, both Employee and Manager
 	// -------------------------------------------------------------
 	protected ComboBox<String> cmbReportEmployee = new ComboBox<>();
@@ -452,7 +455,7 @@ public class Main extends Application {
 
 		vbox.getChildren().add(daysGrid);
 		HBox buttonRow = new HBox(10);
-		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek);
+		buttonRow.getChildren().addAll(btnSubmitHours, btnViewCurrentWeek, btnViewArchiveWeek,btnLoadBulkHours);
 		vbox.getChildren().add(buttonRow);
 		vbox.getChildren().add(txaHoursMessage);
 
@@ -605,6 +608,25 @@ public class Main extends Application {
 				sb.append("  Total Hours: ").append(totalHours).append("\n\n");
 			}
 			txaAllEmployeesCurrentWeek.setText(sb.toString());
+		});
+		
+		btnLoadBulkHours.setOnAction(e -> {
+		    FileChooser fileChooser = new FileChooser();
+		    fileChooser.setTitle("Select Bulk Hours File");
+		    fileChooser.getExtensionFilters().add(
+		        new FileChooser.ExtensionFilter("Text Files", "*.txt")
+		    );
+
+		    File selectedFile = fileChooser.showOpenDialog(null);
+		    if (selectedFile != null) {
+		        List<String> messages = weekRepo.loadBulkHours(selectedFile);
+
+		        if (!messages.isEmpty()) {
+		            showError(String.join("\n", messages));
+		        } else {
+		            showError("Bulk load completed successfully.");
+		        }
+		    }
 		});
 
 		return hbox;

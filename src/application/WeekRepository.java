@@ -52,4 +52,77 @@ public class WeekRepository {
 			e.printStackTrace();
 		}
 	}
+	
+	// bulk hours via text files
+	public List<String> loadBulkHours(File file) {
+		List<String> messages = new ArrayList<>();
+		List<String> successful = new ArrayList<>();
+		List<String> failed = new ArrayList<>();
+		Map<String, Integer> latestWeekMap = new HashMap<>();
+
+		try (Scanner scanner = new Scanner(file)) {
+			int lineNumber = 1;
+
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine().trim();
+				String[] parts = line.split(",");
+
+				if (parts.length != 15) {
+					failed.add("Line " + lineNumber + ": Expected 15 values (ID + 7 hours + 7 PTOs)");
+					lineNumber++;
+					continue;
+				}
+
+				try {
+					String employeeId = parts[0];
+
+					// Get latest week number from memory or archive.
+					int latestWeek = latestWeekMap.getOrDefault(employeeId,
+							getRecordsForEmployee(employeeId).stream().mapToInt(Week::getWeekNumber).max().orElse(0));
+
+					int nextWeek = latestWeek + 1;
+
+					int[] hours = new int[7];
+					for (int i = 0; i < 7; i++) {
+						hours[i] = Integer.parseInt(parts[1 + i]);
+					}
+
+					boolean[] pto = new boolean[7];
+					for (int i = 0; i < 7; i++) {
+						pto[i] = Boolean.parseBoolean(parts[8 + i]);
+					}
+
+					Week week = new Week(employeeId, nextWeek, hours, pto);
+					addRecord(week);
+					latestWeekMap.put(employeeId, nextWeek);
+
+					successful.add("Line " + lineNumber + ": Added as week " + nextWeek + " for " + employeeId);
+
+				} catch (Exception e) {
+					failed.add("Line " + lineNumber + ": Invalid data type or parse error");
+				}
+
+				lineNumber++;
+			}
+		} catch (Exception e) {
+			failed.add("Failed to read file: " + e.getMessage());
+		}
+
+		if (!successful.isEmpty()) {
+			messages.add("Successfully loaded:");
+			messages.addAll(successful);
+		}
+
+		if (!failed.isEmpty()) {
+			messages.add("\n Failed to load:");
+			messages.addAll(failed);
+		    messages.add(""); // spacing
+		    messages.add("Expected Format:");
+		    messages.add("Employee ID, Hours (7), PTO (7)");
+		    messages.add("Example:");
+		    messages.add("0001,8,8,8,8,8,0,0,true,true,true,true,true,false,false");
+		}
+
+		return messages;
+	}
 }

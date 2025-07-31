@@ -37,6 +37,26 @@ public class PayRollCalculator {
 			return calculateStaffPay(emp, week);
 		}
 	}
+	
+	public static PayStub calculatePay(Employee emp, List<Week> weeks) {
+		if (weeks == null || weeks.isEmpty()) return null;
+
+		double totalGross = 0, totalTax = 0, totalNet = 0;
+		int totalHours = 0, totalPTO = 0;
+
+		for (Week w : weeks) {
+			PayStub stub = calculatePay(emp, w);
+			if (stub != null) {
+				totalGross += stub.grossPay;
+				totalTax += stub.taxes;
+				totalNet += stub.netPay;
+				totalHours += stub.totalHours;
+				totalPTO += stub.ptoUsed;
+			}
+		}
+		return new PayStub(totalGross, totalTax, totalNet, totalHours, totalPTO);
+	}
+	
 
 	public static String generateReport(Employee emp, List<Week> history, Week current, String mode, Integer rangeStart,
 			Integer rangeEnd) {
@@ -87,7 +107,7 @@ public class PayRollCalculator {
 				totalPTO += stub.ptoUsed;
 			}
 
-			sb.append("===== SUMMARY =====\n");
+			sb.append("---SUMMARY---\n");
 			sb.append("Total Weeks: ").append(stubs.size()).append("\n");
 			sb.append("Total Hours Worked: ").append(totalHours).append(" hrs\n");
 			sb.append("Total PTO Used: ").append(totalPTO).append(" hrs\n");

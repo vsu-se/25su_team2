@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -16,8 +17,7 @@ import java.util.*;
 
 public class Main extends Application {
 	private final DataHandler handler = new DataHandler("employees.txt");
-	private final Map<String, Week> currentWeekMap = new HashMap<>();
-	private final WeekRepository weekRepo = new WeekRepository();
+	private final WeekRepository weekRepo = new WeekRepository(); 
 	private Employee loggedInUser = null;
 	private Tab tabLogin;
 	private Tab tabEmployeeMgmt;
@@ -146,44 +146,64 @@ public class Main extends Application {
 
 		// Login Button Action
 		btnLogin.setOnAction(e -> {
-			String inputUsername = txtLoginUsername.getText().trim();
-			String inputPassword = txtLoginPassword.getText().trim();
+		    String inputUsername = txtLoginUsername.getText().trim();
+		    String inputPassword = txtLoginPassword.getText().trim();
 
-			// use handler to get an employee obj
-			Employee emp = handler.findEmployeeByUsername(inputUsername);
+		    Employee emp = handler.findEmployeeByUsername(inputUsername);
 
-			// Username check
-			if (emp == null) {
-				showError("Username not found.");
-				return;
-			}
-			// Password check
-			if (!emp.authenticate(inputPassword)) {
-				showError("Incorrect password.");
-				return;
-			}
+		    if (emp == null) {
+		        showError("Username not found.");
+		        return;
+		    }
 
-			tabPane.getTabs().clear();
-			tabPane.getTabs().add(tabLogin); // keep until logout functionality is implemented
-			loggedInUser = emp; // assign the global loggedInUser to the employee;
+		    if (!emp.authenticate(inputPassword)) {
+		        showError("Incorrect password.");
+		        return;
+		    }
 
-			// build tabs based on instance of the employee obj (emp)
-			if (emp instanceof Manager) {
-				tabPane.getTabs().addAll(tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab()),
-						tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab()),
-						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()),
-		        		tabAdminTools = new Tab("Admin Tools", buildAdminToolsTab())); // only managers can access admin tools
-				tabPane.getSelectionModel().select(tabEmployeeMgmt);
-			} else if (emp instanceof Staff) {
-				tabPane.getTabs().addAll(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()),
-						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
-				tabPane.getSelectionModel().select(tabEmployeeAddHours);
-			}
-			btnLogout.setVisible(true);
+		    tabPane.getTabs().clear();
+		    tabPane.getTabs().add(tabLogin);
+		    loggedInUser = emp;
+
+		    if (emp instanceof Manager) {
+		        Node mgmt = buildEmployeeManagementTab();
+		        Node hours = buildHoursEntryTab();
+		        Node report = buildPayrollReportsTab();
+		        Node admin = buildAdminToolsTab();
+
+		        clearAllFields(mgmt);
+		        clearAllFields(hours);
+		        clearAllFields(report);
+		        clearAllFields(admin);
+
+		        tabEmployeeMgmt = new Tab("Employee Management", mgmt);
+		        tabHoursEntry = new Tab("Hours Entry", hours);
+		        tabPayrollReports = new Tab("Payroll Reports", report);
+		        tabAdminTools = new Tab("Admin Tools", admin);
+
+		        tabPane.getTabs().addAll(tabEmployeeMgmt, tabHoursEntry, tabPayrollReports, tabAdminTools);
+		        tabPane.getSelectionModel().select(tabEmployeeMgmt);
+
+		    } else if (emp instanceof Staff) {
+		        Node empHours = buildHoursEntryEmployeeTab();
+		        Node report = buildPayrollReportsTab();
+
+		        clearAllFields(empHours);
+		        clearAllFields(report);
+
+		        tabEmployeeAddHours = new Tab("Add My Hours", empHours);
+		        tabPayrollReports = new Tab("Payroll Reports", report);
+
+		        tabPane.getTabs().addAll(tabEmployeeAddHours, tabPayrollReports);
+		        tabPane.getSelectionModel().select(tabEmployeeAddHours);
+		    }
+
+		    btnLogout.setVisible(true);
 		});
 
 		// Log Out button
 		btnLogout.setOnAction(e -> {
+			weekRepo.saveCurrentWeekMap();
 			tabPane.getTabs().clear();
 			tabPane.getTabs().add(tabLogin);
 			tabPane.getSelectionModel().select(tabLogin);
@@ -192,6 +212,7 @@ public class Main extends Application {
 			// Clear login text fields
 			txtLoginUsername.clear();
 			txtLoginPassword.clear();
+			txaReport.clear();
 
 			btnLogout.setVisible(false);
 		});
@@ -500,7 +521,7 @@ public class Main extends Application {
 				// add current week to currentWeekMap (EmployeeID:Week obj) if key has no value
 				// construct the week obj
 				String empID = emp.getEmployeeID();
-				Week week = currentWeekMap.get(emp.getEmployeeID());
+				Week week = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 				if (week == null) {
 					int nextWeekNum = weekRepo.getRecordsForEmployee(empID).size() + 1;
 					week = new Week(empID, nextWeekNum, new int[7], new boolean[7]);
@@ -521,7 +542,7 @@ public class Main extends Application {
 				// add the values into the week obj and store in the HashMap
 				week.setHours(hours);
 				week.setIsPTO(pto);
-				currentWeekMap.put(empID, week);
+				weekRepo.getCurrentWeekMap().put(empID, week);
 
 				// validate success for user
 				txaHoursMessage.setText("Hours recorded for " + emp.getFullName());
@@ -548,7 +569,7 @@ public class Main extends Application {
 				return;
 			}
 			// use hashMap (EmployeeID:week) to show the week;
-			Week week = currentWeekMap.get(emp.getEmployeeID());
+			Week week = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 			if (week == null) {
 				txaHoursMessage.setText("No current week in progress.");
 			} else {
@@ -571,7 +592,7 @@ public class Main extends Application {
 			}
 
 			String empID = emp.getEmployeeID();
-			Week week = currentWeekMap.get(empID);
+			Week week = weekRepo.getCurrentWeekMap().get(empID);
 
 			if (week == null) {
 				txaHoursMessage.setText("No current week to archive.");
@@ -579,7 +600,7 @@ public class Main extends Application {
 			}
 
 			weekRepo.addRecord(week);
-			currentWeekMap.remove(empID);
+			weekRepo.getCurrentWeekMap().remove(empID);
 
 			txaHoursMessage.setText("Week archived for " + emp.getFullName() + " (Week #" + week.getWeekNumber() + ")");
 			txaHoursMessage.setStyle("-fx-text-fill: blue;");
@@ -592,7 +613,7 @@ public class Main extends Application {
 
 			for (Employee emp : allEmployees) {
 				sb.append(formatEmployeeHours(emp)).append("\n\n");
-				Week week = currentWeekMap.get(emp.getEmployeeID());
+				Week week = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 				if (week == null) {
 					sb.append("  No current week data.\n\n");
 					continue;
@@ -652,6 +673,9 @@ public class Main extends Application {
 		// view report button and text area
 		HBox buttonBox = new HBox(10, btnViewReport, btnSaveReport);
 		vbox.getChildren().addAll(buttonBox, txaReport);
+		txaReport.setPrefHeight(600);
+		txaReport.setStyle("-fx-font-family: 'monospaced';");
+		
 
 		// load the current items depending on instance of employee
 		cmbReportEmployee.getItems().clear();
@@ -775,16 +799,12 @@ public class Main extends Application {
 		            .thenComparing(Employee::getEmployeeID));
 
 		        for (Employee emp : sorted) {
-		            reportAll.append("===== ")
-		                     .append(emp.getFirstName()).append(" ")
-		                     .append(emp.getLastName()).append(" (")
-		                     .append(emp.getEmployeeID()).append(") - ")
-		                     .append(emp.getDepartment()).append(" =====\n");
 
 		            List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-		            Week current = currentWeekMap.get(emp.getEmployeeID());
+		            Week current = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 
 		            String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
+		            if (report.equals("No week data found.")) continue; // Skip employee with no data
 		            reportAll.append(report).append("\n");
 
 		            List<Week> filtered = switch (mode) {
@@ -819,7 +839,7 @@ public class Main extends Application {
 		    // Single employee
 		    Employee emp = handler.findEmployeeByUsername(username);
 		    List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-		    Week current = currentWeekMap.get(emp.getEmployeeID());
+		    Week current = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 
 		    String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
 		    txaReport.setText(report);
@@ -876,7 +896,7 @@ public class Main extends Application {
 		                        " (" + emp.getEmployeeID() + ") - " + emp.getDepartment() + " =====");
 
 		                List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-		                Week current = currentWeekMap.get(emp.getEmployeeID());
+		                Week current = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 
 		                String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
 		                writer.println(report);
@@ -909,7 +929,7 @@ public class Main extends Application {
 		        } else {
 		            Employee emp = handler.findEmployeeByUsername(username);
 		            List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
-		            Week current = currentWeekMap.get(emp.getEmployeeID());
+		            Week current = weekRepo.getCurrentWeekMap().get(emp.getEmployeeID());
 
 		            String report = PayRollCalculator.generateReport(emp, history, current, mode, start, end);
 		            writer.println(report);
@@ -980,7 +1000,7 @@ public class Main extends Application {
 			}
 
 			String empID = loggedInUser.getEmployeeID();
-			Week existingWeek = currentWeekMap.get(empID);
+			Week existingWeek = weekRepo.getCurrentWeekMap().get(empID);
 
 			if (existingWeek != null) {
 				txaEmployeeHoursMessage.setText("You already submitted hours for this week.");
@@ -1005,7 +1025,7 @@ public class Main extends Application {
 
 				int weekNumber = weekRepo.getRecordsForEmployee(empID).size() + 1;
 				Week newWeek = new Week(empID, weekNumber, hoursArray, ptoArray);
-				currentWeekMap.put(empID, newWeek);
+				weekRepo.getCurrentWeekMap().put(empID, newWeek);
 
 				txaEmployeeHoursMessage.setText("Hours submitted successfully for this week.");
 				txaEmployeeHoursMessage.setStyle("-fx-text-fill: green;");
@@ -1030,85 +1050,208 @@ private ScrollPane buildAdminToolsTab() {
         usernames.add(emp.getUsername());
     }
 
-    // --- Edit Daily Entry Section ---
+ // --- Edit Daily Entry Section (Multiple Days) ---
     ComboBox<String> cmbEditDailyEmp = new ComboBox<>();
     cmbEditDailyEmp.getItems().addAll(usernames);
     cmbEditDailyEmp.setPromptText("Select Employee");
-    TextField txtDayEdit = new TextField();
-    txtDayEdit.setPromptText("Day (1-7)");
-    TextField txtHoursEdit = new TextField();
-    txtHoursEdit.setPromptText("Hours");
-    CheckBox chkPTOEdit = new CheckBox("PTO");
-    Button btnEditDailyEntry = new Button("Edit Entry");
 
+    ComboBox<String> cmbEditWeek = new ComboBox<>();
+    cmbEditWeek.setPromptText("Select Week");
+    TextField[] txtHoursEditFields = new TextField[7];
+    CheckBox[] chkPTOEditFields = new CheckBox[7];
+    
+ // Day labels row
+    HBox rowDays = new HBox(10);
+    rowDays.getChildren().add(new Label(String.format("%-6s", "Day:")));
+    String[] dayNames = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+    for (String day : dayNames) {
+    	Label lbl = new Label(day);
+        lbl.setPrefWidth(50); // ensures even spacing for each day
+        lbl.setStyle("-fx-font-family: 'Courier New';"); // optional: clean alignment
+        rowDays.getChildren().add(lbl); // <- this is where lbl goes
+    }
+
+    // Hours row
+    HBox rowHours = new HBox(10);
+    rowHours.getChildren().add(new Label(String.format("%-6s", "Hours:")));
+    for (int i = 0; i < 7; i++) {
+        txtHoursEditFields[i] = new TextField();
+        txtHoursEditFields[i].setPrefWidth(50);
+        rowHours.getChildren().add(txtHoursEditFields[i]);
+    }
+
+    // PTO row
+    HBox rowPTO = new HBox(10);
+    rowPTO.getChildren().add(new Label(String.format("%-6s", "PTO:")));
+    for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
+        chkPTOEditFields[dayIndex] = new CheckBox();
+        chkPTOEditFields[dayIndex].setPrefWidth(50);
+        if (dayIndex < 5) {
+            rowPTO.getChildren().add(chkPTOEditFields[dayIndex]); // Only add Mon–Fri checkboxes
+        }
+    }
+
+    // Load available weeks when employee is selected
     cmbEditDailyEmp.setOnAction(e -> {
+        cmbEditWeek.getItems().clear();
         String username = cmbEditDailyEmp.getValue();
         Employee emp = handler.findEmployeeByUsername(username);
         if (emp != null) {
-            Week week = currentWeekMap.get(emp.getEmployeeID());
-            if (week != null) {
-                txtDayEdit.setText("1");
-                txtHoursEdit.setText(String.valueOf(week.getHours()[0]));
-                chkPTOEdit.setSelected(week.getIsPTO()[0]);
+            List<Week> history = weekRepo.getRecordsForEmployee(emp.getEmployeeID());
+            for (Week w : history) {
+                cmbEditWeek.getItems().add("Week #" + w.getWeekNumber());
             }
         }
     });
 
-    btnEditDailyEntry.setOnAction(e -> {
-        if (!(loggedInUser instanceof Manager)) {
-            showError("Only managers can edit daily entries.");
-            return;
+    // Prefill hours/PTO when week is selected
+    cmbEditWeek.setOnAction(e -> {
+        String username = cmbEditDailyEmp.getValue();
+        String selectedWeek = cmbEditWeek.getValue();
+        if (username == null || selectedWeek == null) return;
+
+        Employee emp = handler.findEmployeeByUsername(username);
+        if (emp == null) return;
+
+        int weekNum = Integer.parseInt(selectedWeek.replace("Week #", ""));
+        Week week = weekRepo.getWeek(emp.getEmployeeID(), weekNum);
+        if (week != null) {
+            for (int i = 0; i < 7; i++) {
+                txtHoursEditFields[i].setText(String.valueOf(week.getHours()[i]));
+                chkPTOEditFields[i].setSelected(week.getIsPTO()[i]);
+            }
         }
-        Manager manager = (Manager) loggedInUser;
-        String employeeUsername = cmbEditDailyEmp.getValue();
-        int dayIndex, newHours;
-        try {
-            dayIndex = Integer.parseInt(txtDayEdit.getText().trim()) - 1;
-            newHours = Integer.parseInt(txtHoursEdit.getText().trim());
-        } catch (NumberFormatException ex) {
-            showError("Invalid day or hours value.");
-            return;
-        }
-        boolean newPTO = chkPTOEdit.isSelected();
-        boolean success = manager.editDailyEntry(
-            employeeUsername, dayIndex, newHours, newPTO,
-            currentWeekMap, weekRepo, "hours.txt", "audit_trail.txt"
-        );
-        showError(success ? "Entry edited successfully." : "Failed to edit entry.");
     });
 
-    GridPane gpEditDailyEntry = new GridPane();
-    gpEditDailyEntry.setHgap(10);
-    gpEditDailyEntry.setVgap(10);
-    gpEditDailyEntry.addRow(0, new Label("Employee:"), cmbEditDailyEmp);
-    gpEditDailyEntry.addRow(1, new Label("Day:"), txtDayEdit);
-    gpEditDailyEntry.addRow(2, new Label("Hours:"), txtHoursEdit);
-    gpEditDailyEntry.addRow(3, new Label("PTO:"), chkPTOEdit);
-    gpEditDailyEntry.addRow(4, btnEditDailyEntry);
-    TitledPane tpEditDailyEntry = new TitledPane("Edit Daily Entry", gpEditDailyEntry);
+    Button btnEditFullWeek = new Button("Submit Edits");
+    btnEditFullWeek.setOnAction(e -> {
+        if (!(loggedInUser instanceof Manager)) {
+            showError("Only managers can edit entries.");
+            return;
+        }
+
+        String username = cmbEditDailyEmp.getValue();
+        String selectedWeek = cmbEditWeek.getValue();
+        if (username == null || selectedWeek == null) {
+            showError("Select employee and week.");
+            return;
+        }
+
+        Employee emp = handler.findEmployeeByUsername(username);
+        int weekNum = Integer.parseInt(selectedWeek.replace("Week #", ""));
+        Week week = weekRepo.getWeek(emp.getEmployeeID(), weekNum);
+
+        int[] newHours = new int[7];
+        boolean[] newPTOs = new boolean[7];
+        try {
+            for (int i = 0; i < 7; i++) {
+                newHours[i] = Integer.parseInt(txtHoursEditFields[i].getText().trim());
+                newPTOs[i] = chkPTOEditFields[i].isSelected();
+            }
+        } catch (Exception ex) {
+            showError("Invalid hour input.");
+            return;
+        }
+
+        Manager manager = (Manager) loggedInUser;
+        boolean success = manager.editSelectiveDays(
+        	    emp,
+        	    week,
+        	    newHours,
+        	    newPTOs,
+        	    weekRepo,
+        	    "audit_trail.txt"
+        	);
+
+        showError(success ? "Edits saved." : "Enter a change or Invaild Hours.");
+    });
+    
+
+    // Layout
+    VBox vbEditFullWeek = new VBox(10,
+    	    new HBox(10, new Label("Employee:"), cmbEditDailyEmp),
+    	    new HBox(10, new Label("Week:"), cmbEditWeek),
+    	    rowDays,
+    	    rowHours,
+    	    rowPTO,
+    	    btnEditFullWeek
+    	);
+    	vbEditFullWeek.setPadding(new Insets(10));
+    	TitledPane tpEditDailyEntry = new TitledPane("Edit Daily Entry", vbEditFullWeek);
 
     // --- Audit Employee Section ---
     ComboBox<String> cmbAuditEmp = new ComboBox<>();
     cmbAuditEmp.getItems().addAll(usernames);
     cmbAuditEmp.setPromptText("Select Employee");
     Button btnAuditEmployee = new Button("Audit");
+    Button btnDeleteEmp = new Button("Delete Employee");
+    TextArea txtAuditOutput = new TextArea();
+    txtAuditOutput.setEditable(false);
+    txtAuditOutput.setPrefHeight(250);
+    txtAuditOutput.setWrapText(false);
+    txtAuditOutput.setFont(javafx.scene.text.Font.font("Monospaced", 12));
+    
+    
+    btnDeleteEmp.setOnAction(e -> {
+        String username = cmbAuditEmp.getValue();
 
+        if (username == null) {
+            showError("Please select an employee to delete.");
+            return;
+        }
+
+        boolean confirmed = showConfirmation("Are you sure you want to delete this employee?");
+        if (!confirmed) return;
+
+        boolean deleted = handler.deleteEmployeeInFile(username); // your method
+
+        if (deleted) {
+            showError("Employee successfully deleted.");
+
+            // Also update internal memory (optional)
+            Employee emp = handler.findEmployeeByUsername(username);
+            if (emp instanceof Manager) {
+                handler.getManagers().remove(emp);
+            } else if (emp instanceof Staff) {
+                handler.getStaff().remove(emp);
+            }
+
+            handler.saveToFile("employees.txt"); // make sure the file reflects current memory
+
+            // Refresh UI ComboBoxes
+            usernames.remove(username); // if your list is mutable
+            cmbAuditEmp.getItems().remove(username);
+            cmbEditDailyEmp.getItems().remove(username);
+ 
+
+        } else {
+            showError("Employee could not be deleted.");
+        }
+    });
+    
     btnAuditEmployee.setOnAction(e -> {
         if (!(loggedInUser instanceof Manager)) {
             showError("Only managers can audit employees.");
             return;
         }
+
         Manager manager = (Manager) loggedInUser;
         String employeeUsername = cmbAuditEmp.getValue();
-        manager.auditEmployee(employeeUsername, Collections.emptyList(), "audit_trail.txt", weekRepo);
-    });
+        Employee emp = handler.findEmployeeByUsername(employeeUsername);
 
-    GridPane gpAuditEmployee = new GridPane();
-    gpAuditEmployee.setHgap(10);
-    gpAuditEmployee.setVgap(10);
-    gpAuditEmployee.addRow(0, new Label("Employee:"), cmbAuditEmp);
-    gpAuditEmployee.addRow(1, btnAuditEmployee);
-    TitledPane tpAuditEmployee = new TitledPane("Audit Employee", gpAuditEmployee);
+        if (emp != null) {
+        	String result = manager.auditEmployeeFull(emp, "audit_trail.txt");
+        	txtAuditOutput.setText(result);
+        }
+    });
+    
+    VBox vbAuditEmployee = new VBox(10,
+    	    new HBox(10, new Label("Employee:"), cmbAuditEmp),
+    	    new HBox(10, btnAuditEmployee, btnDeleteEmp),  // Audit and Delete side by side
+    	    txtAuditOutput
+    	);
+    	vbAuditEmployee.setPadding(new Insets(10));
+    	TitledPane tpAuditEmployee = new TitledPane("Audit / Delete Employee", vbAuditEmployee);
 
     // --- Audit Editor Section ---
     ComboBox<String> cmbAuditEditorEmp = new ComboBox<>();
@@ -1124,6 +1267,7 @@ private ScrollPane buildAdminToolsTab() {
     TextField txtRangeEnd = new TextField();
     txtRangeEnd.setPromptText("Range End");
     Button btnAuditEditor = new Button("Audit Editor");
+
 
     btnAuditEditor.setOnAction(e -> {
         if (!(loggedInUser instanceof Manager)) {
@@ -1244,6 +1388,13 @@ private ScrollPane buildAdminToolsTab() {
 		alert.getButtonTypes().add(ButtonType.OK);
 		alert.showAndWait();
 	}
+	
+	private boolean showConfirmation(String msg) {
+	    Alert alert = new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.YES, ButtonType.NO);
+	    alert.setHeaderText(null);
+	    alert.showAndWait();
+	    return alert.getResult() == ButtonType.YES;
+	}
 
 	private void displayCurrentWeek(Employee emp, Week week) {
 		String[] days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
@@ -1329,5 +1480,21 @@ private ScrollPane buildAdminToolsTab() {
 		System.out.println("");
 
 		launch(args);
+	}
+	
+	private void clearAllFields(Node node) {
+	    if (node instanceof TextField) {
+	        ((TextField) node).clear();
+	    } else if (node instanceof CheckBox) {
+	        ((CheckBox) node).setSelected(false);
+	    } else if (node instanceof ComboBox) {
+	        ((ComboBox<?>) node).getSelectionModel().clearSelection();
+	    } else if (node instanceof TextArea) {
+	        ((TextArea) node).clear();
+	    } else if (node instanceof Pane) {
+	        for (Node child : ((Pane) node).getChildren()) {
+	            clearAllFields(child);
+	        }
+	    }
 	}
 }

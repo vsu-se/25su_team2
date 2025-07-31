@@ -1,0 +1,85 @@
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 1       / true       | 2       / true      
+Thu   | 8       / true       | 8       / true      
+Fri   | 6       / true       | 6       / true      
+Sat   | 21      / false      | 21      / false     
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 2       / true       | 2       / true      
+Thu   | 8       / true       | 4       / true      
+Fri   | 6       / true       | 6       / true      
+Sat   | 21      / false      | 21      / false     
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 2       / true       | 2       / true      
+Thu   | 4       / true       | 8       / true      
+Fri   | 6       / true       | 6       / true      
+Sat   | 21      / false      | 21      / false     
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 2       / true       | 2       / true      
+Thu   | 8       / true       | 8       / true      
+Fri   | 6       / true       | 1       / true      
+Sat   | 21      / false      | 21      / true      
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 2       / true       | 10      / true      
+Thu   | 8       / true       | 8       / true      
+Fri   | 1       / true       | 1       / true      
+Sat   | 21      / true       | 21      / true      
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 1       / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 10      / true       | 11      / true      
+Thu   | 8       / true       | 8       / true      
+Fri   | 1       / true       | 1       / true      
+Sat   | 21      / true       | 21      / true      
+Sun   | 3       / false      | 3       / false     
+
+=== Week 1 Edit by ManagerID:0001 for EmployeeID:0001 ===
+
+Day   | Before (Hours / PTO)   | After (Hours / PTO)
+----------------------------------------------------
+Mon   | 1       / true       | 12      / true      
+Tue   | 1       / true       | 1       / true      
+Wed   | 11      / true       | 13      / true      
+Thu   | 8       / true       | 8       / true      
+Fri   | 1       / true       | 1       / true      
+Sat   | 21      / true       | 9       / true      
+Sun   | 3       / false      | 3       / false     
+

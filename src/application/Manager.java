@@ -155,4 +155,50 @@ public class Manager extends Employee {
 	    // Return results or a message if none found
 	    return sb.length() == 0 ? "No audit records found." : sb.toString();
 	}
-}	
+	
+	// Edits the fields of an Employee object if new values are provided and different from current.
+	// Returns true if any field was changed, false otherwise.
+	// Note: Password is hashed before storing.
+	// Only update fields if the new value is provided and different from the current value
+	public boolean editEmployee(Employee emp, String newFirstName, String newLastName, String newPassword, String newDepartment, Double newPayRate, Double newTaxRate) {
+	    boolean changed = false;
+
+	    // First name
+	    if (newFirstName != null && !newFirstName.isBlank() && !newFirstName.equals(emp.getFirstName())) {
+	        emp.firstName = newFirstName;
+	        changed = true;
+	    }
+	    // Last name
+	    if (newLastName != null && !newLastName.isBlank() && !newLastName.equals(emp.getLastName())) {
+	        emp.lastName = newLastName;
+	        changed = true;
+	    }
+	    // password
+	    if (newPassword != null
+	        && !newPassword.isBlank()) {
+	      String currentHash = emp.getPassword();  
+	      String newHash     = DataHandler.hashPassword(newPassword);
+	      if (!newHash.equals(currentHash)) {
+	        emp.setHashedPassword(newHash);
+	        changed = true;
+	      }
+	    }
+	    // Department
+	    if (newDepartment != null && !newDepartment.isBlank() && !newDepartment.equals(emp.getDepartment())) {
+	        emp.department = newDepartment;
+	        changed = true;
+	    }
+	    // Pay rate
+	    if (newPayRate != null && newPayRate > 0 && Double.compare(newPayRate, emp.getPayRate()) != 0) {
+	        emp.payRate = newPayRate;
+	        changed = true;
+	    }
+	    // Tax rate
+	    if (newTaxRate != null && newTaxRate >= 0 && Double.compare(newTaxRate, emp.getTaxRate()) != 0) {
+	        emp.taxRate = newTaxRate;
+	        changed = true;
+	    }
+
+	    return changed;
+	}
+}

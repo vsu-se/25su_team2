@@ -28,6 +28,7 @@ class ManagerTest {
     private Employee bob;
     private static final String TEST_HOURS_FILE = "test_hours.txt";
     private static final String TEST_AUDIT_FILE = "test_audit_trail.txt";
+    private static final String TEST_EMPLOYEES_FILE = "test_employees.txt";
     private WeekRepository weekRepo;
     private Map<String, Week> currentWeekMap;
     private Manager manager;
@@ -38,6 +39,7 @@ class ManagerTest {
         try {
             new PrintWriter(TEST_HOURS_FILE).close(); // Clear hours file
             new PrintWriter(TEST_AUDIT_FILE).close(); // Clear audit file
+            new PrintWriter(TEST_EMPLOYEES_FILE).close(); // Clear employees file
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -107,6 +109,7 @@ class ManagerTest {
         assertEquals("User is not a manager", ex.getMessage());
     }
     
+    //sprint 2 test cases
     @Test
     void testEditDailyEntryPersistsAndAudits() throws Exception {
         String employeeUsername = bob.getUsername(); // Use bob's username for testing
@@ -219,5 +222,20 @@ class ManagerTest {
         Assertions.assertTrue(result.contains("Week:1"));
         Assertions.assertTrue(result.contains("Week:2"));
     }
+    @Test
+    void testEditEmployeeUpdatesFields() {
+        Employee emp = new Staff("John", "Doe", "jdoe", "pass", "Sales", 25.0, 10.0, 5);
+        Manager mgr = new Manager("Alice", "Smith", "asmith", "secret123", "Payroll", 50.0, 20.0, 10);
 
-}
+        boolean changed = mgr.editEmployee(emp, "Jane", "Smith", "newpass", "Marketing", 30.0, 12.0);
+
+        assertTrue(changed);
+        assertEquals("Jane", emp.getFirstName());
+        assertEquals("Smith", emp.getLastName());
+        assertTrue(emp.authenticate("newpass"));
+        assertEquals("Marketing", emp.getDepartment());
+        assertEquals(30.0, emp.getPayRate());
+        assertEquals(12.0, emp.getTaxRate());
+    }
+
+ }

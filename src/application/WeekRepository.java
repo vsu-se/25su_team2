@@ -9,10 +9,14 @@ import java.util.stream.Collectors;
 public class WeekRepository {
 	private List<Week> records = new ArrayList<>();
 	private final String filePath = "hours.txt";
+	private Map<String, Week> currentWeekMap = new HashMap<>();
+	private final String currentMapPath = "current_week_map.txt";
 
 	public WeekRepository() {
-	        load();
-	    }
+		load();
+		loadCurrentWeekMap();
+
+	}
 
 	public void addRecord(Week record) {
 		records.add(record);
@@ -20,16 +24,25 @@ public class WeekRepository {
 	}
 
 	public List<Week> getRecordsForEmployee(String employeeId) {
-		return records.stream().filter(r -> r.getEmployeeId().equals(employeeId)).sorted(Comparator.comparingInt(Week::getWeekNumber)).collect(Collectors.toList());
+		return records.stream().filter(r -> r.getEmployeeId().equals(employeeId))
+				.sorted(Comparator.comparingInt(Week::getWeekNumber)).collect(Collectors.toList());
 	}
 
 	public Week getWeek(String employeeId, int weekNum) {
 		return records.stream().filter(r -> r.getEmployeeId().equals(employeeId) && r.getWeekNumber() == weekNum)
 				.findFirst().orElse(null);
 	}
-	
+
+	public Map<String, Week> getCurrentWeekMap() {
+	    return currentWeekMap;
+	}
+
+	public void setCurrentWeek(String employeeId, Week week) {
+	    currentWeekMap.put(employeeId, week);
+	    saveCurrentWeekMap();
+	}
 //SAVE hours
-	private void save() {
+	public void save() {
 		try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
 			for (Week r : records) {
 				writer.println(r.toFileString());
@@ -38,6 +51,17 @@ public class WeekRepository {
 			e.printStackTrace();
 		}
 	}
+
+	public void saveCurrentWeekMap() {
+	    try (PrintWriter writer = new PrintWriter(new FileWriter(currentMapPath))) {
+	        for (Week w : currentWeekMap.values()) {
+	            writer.println(w.toFileString());
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	}
+
 //LOAD hours
 	private void load() {
 		File file = new File(filePath);
@@ -52,7 +76,22 @@ public class WeekRepository {
 			e.printStackTrace();
 		}
 	}
-	
+
+	public void loadCurrentWeekMap() {
+		File file = new File(currentMapPath);
+		if (!file.exists())
+			return;
+
+		try (Scanner scanner = new Scanner(file)) {
+			while (scanner.hasNextLine()) {
+				Week week = Week.fromLine(scanner.nextLine());
+				currentWeekMap.put(week.getEmployeeId(), week);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	// bulk hours via text files
 	public List<String> loadBulkHours(File file) {
 		List<String> messages = new ArrayList<>();
@@ -116,11 +155,11 @@ public class WeekRepository {
 		if (!failed.isEmpty()) {
 			messages.add("\n Failed to load:");
 			messages.addAll(failed);
-		    messages.add(""); // spacing
-		    messages.add("Expected Format:");
-		    messages.add("Employee ID, Hours (7), PTO (7)");
-		    messages.add("Example:");
-		    messages.add("0001,8,8,8,8,8,0,0,true,true,true,true,true,false,false");
+			messages.add(""); // spacing
+			messages.add("Expected Format:");
+			messages.add("Employee ID, Hours (7), PTO (7)");
+			messages.add("Example:");
+			messages.add("0001,8,8,8,8,8,0,0,true,true,true,true,true,false,false");
 		}
 
 		return messages;

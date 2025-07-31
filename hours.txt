@@ -1,2 +1,11 @@
-0001,1,1,1,1,1,1,21,3,true,true,true,true,true,false,false
+0001,1,12,1,13,8,1,9,3,true,true,true,true,true,true,false
 0003,1,5,5,6,5,4,0,0,false,false,false,false,false,false,false
+0001,2,8,9,8,8,8,0,0,true,true,true,true,true,false,false
+0002,1,5,5,5,5,5,5,5,true,true,true,true,true,false,false
+0001,3,23,12,12,3,3,3,3,false,false,false,false,false,false,false
+0001,4,1,1,1,2,3,4,5,false,false,false,false,false,false,false
+0001,5,1,1,1,2,3,4,5,false,false,false,false,false,false,false
+0001,6,8,8,8,8,8,0,0,true,true,true,true,true,false,false
+0002,2,5,5,5,5,5,5,5,true,true,true,true,true,false,false
+0001,6,12,3,4,2,1,4,2,true,true,false,false,false,false,false
+0002,2,14,4,4,2,13,4,2,true,true,false,false,false,false,false

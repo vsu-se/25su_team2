@@ -169,4 +169,75 @@ public class DataHandler {
 
 	    return null;
 	}
+	
+	public boolean deleteEmployeeInFile(String username) {
+	    File inputFile = new File("employees.txt");
+	    File tempFile = new File("employees_temp.txt");
+	    File deletedFile = new File("deleted_employees.txt");
+
+	    boolean deleted = false;
+	    String deletedLine = null;
+	    String section = "";
+
+	    try (
+	        Scanner scanner = new Scanner(inputFile);
+	        PrintWriter writer = new PrintWriter(new FileWriter(tempFile));
+	        PrintWriter deletedWriter = new PrintWriter(new FileWriter(deletedFile, true)) // append mode
+	    ) {
+	        while (scanner.hasNextLine()) {
+	            String line = scanner.nextLine();
+
+	            // Preserve section headers
+	            if (line.equalsIgnoreCase("managers:") || line.equalsIgnoreCase("staff:")) {
+	                section = line.toLowerCase();
+	                writer.println(line);
+	                continue;
+	            }
+
+	            // Preserve blank lines
+	            if (line.trim().isEmpty()) {
+	                writer.println();
+	                continue;
+	            }
+
+	            String[] parts = line.split(",");
+	            if (parts.length != 8) {
+	                writer.println(line);
+	                continue;
+	            }
+
+	            String currentUsername = parts[2];
+
+	            if (currentUsername.equalsIgnoreCase(username)) {
+	                deleted = true;
+	                deletedLine = line;
+
+	                // First copy to deleted_employees.txt
+	                deletedWriter.println(section);
+	                deletedWriter.println(line);
+	                deletedWriter.println(); // separator
+
+	                // Do not write to temp file (i.e., delete from employees.txt)
+	                continue;
+	            }
+
+	            writer.println(line); // Keep all other lines
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return false;
+	    }
+
+	    // Replace original file if deletion happened
+	    if (deleted) {
+	        if (!inputFile.delete() || !tempFile.renameTo(inputFile)) {
+	            System.err.println("File replacement failed.");
+	            return false;
+	        }
+	    } else {
+	        tempFile.delete(); // Cleanup if nothing deleted
+	    }
+
+	    return deleted;
+	}
 }

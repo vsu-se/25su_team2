@@ -24,6 +24,7 @@ public class Main extends Application {
 	private Tab tabHoursEntry;
 	private Tab tabPayrollReports;
 	private Tab tabEmployeeAddHours;
+	private Tab tabAdminTools;
 	private final Button btnLogout = new Button("Log out");
 
 	// GUI base structure
@@ -170,7 +171,8 @@ public class Main extends Application {
 			if (emp instanceof Manager) {
 				tabPane.getTabs().addAll(tabEmployeeMgmt = new Tab("Employee Management", buildEmployeeManagementTab()),
 						tabHoursEntry = new Tab("Hours Entry", buildHoursEntryTab()),
-						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()));
+						tabPayrollReports = new Tab("Payroll Reports", buildPayrollReportsTab()),
+		        		tabAdminTools = new Tab("Admin Tools", buildAdminToolsTab())); // only managers can access admin tools
 				tabPane.getSelectionModel().select(tabEmployeeMgmt);
 			} else if (emp instanceof Staff) {
 				tabPane.getTabs().addAll(tabEmployeeAddHours = new Tab("Add My Hours", buildHoursEntryEmployeeTab()),
@@ -1015,6 +1017,225 @@ public class Main extends Application {
 
 		return vbox;
 	}
+	
+	// -----Manager Admin Tools Tab -----------------------------------------------------
+	
+private ScrollPane buildAdminToolsTab() {
+    VBox vbox = new VBox(20);
+    vbox.setPadding(new Insets(20));
+
+    // Helper: get sorted usernames
+    List<String> usernames = new ArrayList<>();
+    for (Employee emp : getSortedEmployees()) {
+        usernames.add(emp.getUsername());
+    }
+
+    // --- Edit Daily Entry Section ---
+    ComboBox<String> cmbEditDailyEmp = new ComboBox<>();
+    cmbEditDailyEmp.getItems().addAll(usernames);
+    cmbEditDailyEmp.setPromptText("Select Employee");
+    TextField txtDayEdit = new TextField();
+    txtDayEdit.setPromptText("Day (1-7)");
+    TextField txtHoursEdit = new TextField();
+    txtHoursEdit.setPromptText("Hours");
+    CheckBox chkPTOEdit = new CheckBox("PTO");
+    Button btnEditDailyEntry = new Button("Edit Entry");
+
+    cmbEditDailyEmp.setOnAction(e -> {
+        String username = cmbEditDailyEmp.getValue();
+        Employee emp = handler.findEmployeeByUsername(username);
+        if (emp != null) {
+            Week week = currentWeekMap.get(emp.getEmployeeID());
+            if (week != null) {
+                txtDayEdit.setText("1");
+                txtHoursEdit.setText(String.valueOf(week.getHours()[0]));
+                chkPTOEdit.setSelected(week.getIsPTO()[0]);
+            }
+        }
+    });
+
+    btnEditDailyEntry.setOnAction(e -> {
+        if (!(loggedInUser instanceof Manager)) {
+            showError("Only managers can edit daily entries.");
+            return;
+        }
+        Manager manager = (Manager) loggedInUser;
+        String employeeUsername = cmbEditDailyEmp.getValue();
+        int dayIndex, newHours;
+        try {
+            dayIndex = Integer.parseInt(txtDayEdit.getText().trim()) - 1;
+            newHours = Integer.parseInt(txtHoursEdit.getText().trim());
+        } catch (NumberFormatException ex) {
+            showError("Invalid day or hours value.");
+            return;
+        }
+        boolean newPTO = chkPTOEdit.isSelected();
+        boolean success = manager.editDailyEntry(
+            employeeUsername, dayIndex, newHours, newPTO,
+            currentWeekMap, weekRepo, "hours.txt", "audit_trail.txt"
+        );
+        showError(success ? "Entry edited successfully." : "Failed to edit entry.");
+    });
+
+    GridPane gpEditDailyEntry = new GridPane();
+    gpEditDailyEntry.setHgap(10);
+    gpEditDailyEntry.setVgap(10);
+    gpEditDailyEntry.addRow(0, new Label("Employee:"), cmbEditDailyEmp);
+    gpEditDailyEntry.addRow(1, new Label("Day:"), txtDayEdit);
+    gpEditDailyEntry.addRow(2, new Label("Hours:"), txtHoursEdit);
+    gpEditDailyEntry.addRow(3, new Label("PTO:"), chkPTOEdit);
+    gpEditDailyEntry.addRow(4, btnEditDailyEntry);
+    TitledPane tpEditDailyEntry = new TitledPane("Edit Daily Entry", gpEditDailyEntry);
+
+    // --- Audit Employee Section ---
+    ComboBox<String> cmbAuditEmp = new ComboBox<>();
+    cmbAuditEmp.getItems().addAll(usernames);
+    cmbAuditEmp.setPromptText("Select Employee");
+    Button btnAuditEmployee = new Button("Audit");
+
+    btnAuditEmployee.setOnAction(e -> {
+        if (!(loggedInUser instanceof Manager)) {
+            showError("Only managers can audit employees.");
+            return;
+        }
+        Manager manager = (Manager) loggedInUser;
+        String employeeUsername = cmbAuditEmp.getValue();
+        manager.auditEmployee(employeeUsername, Collections.emptyList(), "audit_trail.txt", weekRepo);
+    });
+
+    GridPane gpAuditEmployee = new GridPane();
+    gpAuditEmployee.setHgap(10);
+    gpAuditEmployee.setVgap(10);
+    gpAuditEmployee.addRow(0, new Label("Employee:"), cmbAuditEmp);
+    gpAuditEmployee.addRow(1, btnAuditEmployee);
+    TitledPane tpAuditEmployee = new TitledPane("Audit Employee", gpAuditEmployee);
+
+    // --- Audit Editor Section ---
+    ComboBox<String> cmbAuditEditorEmp = new ComboBox<>();
+    cmbAuditEditorEmp.getItems().addAll(usernames);
+    cmbAuditEditorEmp.setPromptText("Select Employee");
+    ComboBox<String> cmbMode = new ComboBox<>();
+    cmbMode.getItems().addAll("single", "range", "all");
+    cmbMode.setValue("all");
+    TextField txtWeek = new TextField();
+    txtWeek.setPromptText("Week # (for single)");
+    TextField txtRangeStart = new TextField();
+    txtRangeStart.setPromptText("Range Start");
+    TextField txtRangeEnd = new TextField();
+    txtRangeEnd.setPromptText("Range End");
+    Button btnAuditEditor = new Button("Audit Editor");
+
+    btnAuditEditor.setOnAction(e -> {
+        if (!(loggedInUser instanceof Manager)) {
+            showError("Only managers can audit editor.");
+            return;
+        }
+        Manager manager = (Manager) loggedInUser;
+        String mode = cmbMode.getValue();
+        Integer week = txtWeek.getText().isBlank() ? null : Integer.parseInt(txtWeek.getText());
+        Integer rangeStart = txtRangeStart.getText().isBlank() ? null : Integer.parseInt(txtRangeStart.getText());
+        Integer rangeEnd = txtRangeEnd.getText().isBlank() ? null : Integer.parseInt(txtRangeEnd.getText());
+        String result = manager.auditEditor("audit_trail.txt", mode, week, rangeStart, rangeEnd);
+        showError(result);
+    });
+
+    GridPane gpAuditEditor = new GridPane();
+    gpAuditEditor.setHgap(10);
+    gpAuditEditor.setVgap(10);
+    gpAuditEditor.addRow(0, new Label("Employee:"), cmbAuditEditorEmp);
+    gpAuditEditor.addRow(1, new Label("Mode:"), cmbMode);
+    gpAuditEditor.addRow(2, new Label("Week:"), txtWeek);
+    gpAuditEditor.addRow(3, new Label("Range Start:"), txtRangeStart);
+    gpAuditEditor.addRow(4, new Label("Range End:"), txtRangeEnd);
+    gpAuditEditor.addRow(5, btnAuditEditor);
+    TitledPane tpAuditEditor = new TitledPane("Audit Editor", gpAuditEditor);
+
+    // --- Edit Employee Section ---
+    ComboBox<String> cmbEditEmp = new ComboBox<>();
+    cmbEditEmp.getItems().addAll(usernames);
+    cmbEditEmp.setPromptText("Select Employee");
+    TextField txtFirstName = new TextField();
+    TextField txtLastName = new TextField();
+    TextField txtDepartment = new TextField();
+    TextField txtPayRate = new TextField();
+    TextField txtTaxRate = new TextField();
+    PasswordField txtPassword = new PasswordField();
+    Button btnUpdateEmployee = new Button("Update Employee");
+
+    cmbEditEmp.setOnAction(e -> {
+        String username = cmbEditEmp.getValue();
+        Employee emp = handler.findEmployeeByUsername(username);
+        if (emp != null) {
+            txtFirstName.setText(emp.getFirstName());
+            txtLastName.setText(emp.getLastName());
+            txtDepartment.setText(emp.getDepartment());
+            txtPayRate.setText(String.valueOf(emp.getPayRate()));
+            txtTaxRate.setText(String.valueOf(emp.getTaxRate()));
+            txtPassword.setText(""); // Do not autofill password
+        }
+    });
+
+    btnUpdateEmployee.setOnAction(e -> {
+        if (!(loggedInUser instanceof Manager)) {
+            showError("Only managers can edit employees.");
+            return;
+        }
+        Manager manager = (Manager) loggedInUser;
+        String username = cmbEditEmp.getValue();
+        Employee emp = handler.findEmployeeByUsername(username);
+        if (emp == null) {
+            showError("Employee not found.");
+            return;
+        }
+        boolean changed = false;
+        try {
+            changed = manager.editEmployee(
+                emp,
+                txtFirstName.getText().trim(),
+                txtLastName.getText().trim(),
+                txtPassword.getText().trim(),
+                txtDepartment.getText().trim(),
+                txtPayRate.getText().isBlank() ? null : Double.parseDouble(txtPayRate.getText().trim()),
+                txtTaxRate.getText().isBlank() ? null : Double.parseDouble(txtTaxRate.getText().trim())
+            );
+        } catch (Exception ex) {
+            showError("Error editing employee: " + ex.getMessage());
+            return;
+        }
+        if (changed) {
+            handler.saveToFile("employees.txt");
+            showError("Employee updated successfully.");
+        } else {
+            showError("No changes made.");
+        }
+    });
+
+    GridPane gpEditEmployee = new GridPane();
+    gpEditEmployee.setHgap(10);
+    gpEditEmployee.setVgap(10);
+    gpEditEmployee.addRow(0, new Label("Employee:"), cmbEditEmp);
+    gpEditEmployee.addRow(1, new Label("First Name:"), txtFirstName);
+    gpEditEmployee.addRow(2, new Label("Last Name:"), txtLastName);
+    gpEditEmployee.addRow(3, new Label("Department:"), txtDepartment);
+    gpEditEmployee.addRow(4, new Label("Pay Rate:"), txtPayRate);
+    gpEditEmployee.addRow(5, new Label("Tax Rate:"), txtTaxRate);
+    gpEditEmployee.addRow(6, new Label("Password:"), txtPassword);
+    gpEditEmployee.addRow(7, btnUpdateEmployee);
+    TitledPane tpEditEmployee = new TitledPane("Edit Employee", gpEditEmployee);
+
+    vbox.getChildren().addAll(
+        tpEditDailyEntry,
+        tpAuditEmployee,
+        tpAuditEditor,
+        tpEditEmployee
+    );
+
+    ScrollPane scrollPane = new ScrollPane(vbox);
+    scrollPane.setFitToWidth(true);
+    return scrollPane;
+}
+
+
 
 //Helpers to format info to be displayed as the stories required, I kinda came up with a way to make it look organized.-----------
 
